@@ -1,5 +1,6 @@
 # NSPW
 Cool update of SPW
+[Read Code Plz,idk why the preview messed up]
 # How do I use it?
 Aim a prop,then type "savee_nspw_debug_pickup" in game console to pickup a prop(or dupe)
 that's it
@@ -31,3 +32,6 @@ Check nspw_sv_mainfunc.lua
 Ar2 Mag - Extra magsize,less recoil,more reloading time
 Ar2 altfire ammo(Energy ball) - 10% chance to deal tons of damage(maybe)
 HEV Battery - More damage,but also more bullet spread(Changes trace)
+
+# Other things
+You are NOT allowed to upload this addon to Workshop/other website(?)
