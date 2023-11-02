@@ -12,6 +12,7 @@ RMB: Block/Alt fire(there's no altfire in current version,sad)
 R: Reload(Gun)
 E+R Select "Style"(HoldType)
 E+RMB: Drop props
+Heavy Shotguns and Bolt-Action Rifles require press LMB manually to pump/bolt
 
 # Gun Support?
 CS:S Weapons,HL2 firearms(not crossbow or rpg,lol)(not including 357,sad)
