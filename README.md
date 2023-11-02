@@ -35,4 +35,4 @@ Ar2 altfire ammo(Energy ball) - 10% chance to deal tons of damage(maybe)
 HEV Battery - More damage,but also more bullet spread(Changes trace)
 
 # Other things
-You are NOT allowed to upload this addon to Workshop/other website(?)
+You are NOT allowed to upload this addon to Workshop/other website(maybe....???????)
