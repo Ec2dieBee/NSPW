@@ -168,6 +168,22 @@ local datatbl = {
 		MeleeHitEffect = "StunstickImpact",
 		--BlockDamageType = DMG_GENERIC, --因格挡而受伤时强制的伤害类型
 	},
+	["models/weapons/w_crowbar.mdl"] = {
+		Priority = 2, --优先级越高越优先被放到手上
+		OffsetPos = Vector(0,0.2,-7), --偏移(以Local计(虽然跟啥也没说一样))
+		OffsetAng = Angle(-90,-45,0), --偏移(以Local计(虽然跟啥也没说一样))
+		AttackTimeModify = 0, --负数: 减少下次攻击所需时间,正数相反 :(
+		AttackDamageModify = 8, --负数: 减少伤害,正数相反
+		AttackDamageModifyOffset = 3, --伤害随机值
+		AttackDamageType = DMG_SLASH, --伤害类型
+		BlockMulAdjust = 0.15, --格挡伤害乘数,值越高格挡时受到的伤害越低
+		BlockDamageMul = 0.9, --因格挡导致自己受伤时的伤害乘数
+		--BlockDamageType = DMG_GENERIC, --因格挡而受伤时强制的伤害类型
+		MeleeHitSound = {
+			"weapons/crowbar/crowbar_impact1.wav",
+			"weapons/crowbar/crowbar_impact2.wav"
+		},
+	},
 	["models/props_junk/harpoon002a.mdl"] = {
 		Priority = 1,
 		OffsetPos = Vector(0,0,0),
@@ -960,11 +976,16 @@ local datatbl = {
 		ReloadEvent_ClipOut = "weapons/sg550/sg550_clipout.wav",
 		ReloadEvent_ClipIn = "weapons/sg550/sg550_clipin.wav",
 		ReloadEvent_LoadGun = "weapons/sg550/sg550_boltpull.wav",
+		AimOffsetPos = Vector(0,0,-3.2),
+		AimOffsetAng = Angle(),
+		AimUseScope = true,
+		AimMouseSensMul = 0.4,
+		AimFovMul = 0.4,
 	},
 	["models/weapons/w_smg_mp5.mdl"] = {
 		Priority = 3,
-		OffsetPos = Vector(5,1,3.5),
-		OffsetAng = Angle(11,-0.5,-5),
+		OffsetPos = Vector(5,0.3,3.5),
+		OffsetAng = Angle(11,-1,-2),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		DoubleHand = true,
@@ -998,11 +1019,13 @@ local datatbl = {
 			["ValveBiped.Bip01_R_Clavicle"] = {Pos = Vector(-2,-5,-2.5)},
 			--[0] = {Pos = Vector(0,0,0)},
 		},
+		AimOffsetPos = Vector(2,0.1,-2.8),
+		AimOffsetAng = Angle(),
 	},
 	["models/weapons/w_shot_m3super90.mdl"] = {
 		Priority = 3,
 		OffsetPos = Vector(10,1,1.7),
-		OffsetAng = Angle(11,-0.5,-5),
+		OffsetAng = Angle(11,-1.5,-1),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		BulletDamageType = DMG_BUCKSHOT,
@@ -1032,11 +1055,13 @@ local datatbl = {
 		MuzzlePos = Vector(5,0,2),
 		Automatic = true,
 		NextFireTime = 1,
+		AimOffsetPos = Vector(3,0.3,-1.5),
+		AimOffsetAng = Angle(),
 	},
 	["models/weapons/w_rif_ak47.mdl"] = {
 		Priority = 3,
-		OffsetPos = Vector(10,1,2),
-		OffsetAng = Angle(11,-0.5,-5),
+		OffsetPos = Vector(10,0.6,2),
+		OffsetAng = Angle(11,-1.2,-1),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
@@ -1065,11 +1090,14 @@ local datatbl = {
 		ReloadEvent_ClipOut = "weapons/ak47/ak47_clipout.wav",
 		ReloadEvent_ClipIn = "weapons/ak47/ak47_clipin.wav",
 		ReloadEvent_LoadGun = "weapons/ak47/ak47_boltpull.wav",
+		AimOffsetPos = Vector(0,0,-2),
+		AimOffsetAng = Angle(),
+		
 	},
 	["models/weapons/w_smg_ump45.mdl"] = {
 		Priority = 3,
-		OffsetPos = Vector(5,1,3),
-		OffsetAng = Angle(11,-0.5,-5),
+		OffsetPos = Vector(5,0.8,3),
+		OffsetAng = Angle(11,-1.2,-1),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
@@ -1098,11 +1126,13 @@ local datatbl = {
 		ReloadEvent_ClipOut = "weapons/ump45/ump45_clipout.wav",
 		ReloadEvent_ClipIn = "weapons/ump45/ump45_clipin.wav",
 		ReloadEvent_LoadGun = "weapons/ump45/ump45_boltslap.wav",
+		AimOffsetPos = Vector(2,-0.1,-2.7),
+		AimOffsetAng = Angle(),
 	},
 	["models/weapons/w_mach_m249para.mdl"] = {
 		Priority = 3,
-		OffsetPos = Vector(10.3,1,3),
-		OffsetAng = Angle(11,-0.5,-5),
+		OffsetPos = Vector(10.3,0.8,3),
+		OffsetAng = Angle(11,-1.5,-1),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
@@ -1131,14 +1161,18 @@ local datatbl = {
 		ReloadEvent_ClipOut = "weapons/m249/m249_boxout.wav",
 		ReloadEvent_ClipIn = "weapons/m249/m249_boxin.wav",
 		ReloadEvent_LoadGun = "weapons/m249/m249_coverdown.wav",
+		AimOffsetPos = Vector(5,0,-2.2),
+		AimOffsetAng = Angle(),
+		AimMouseSensMul = 0.9,
+		AimFovMul = 0.95,
 	},
 
 	--HL2枪械
 
 	["models/weapons/w_pistol.mdl"] = {
 		Priority = 3,
-		OffsetPos = Vector(2.5,0,-3.5),
-		OffsetAng = Angle(-9.8,180+1,6),
+		OffsetPos = Vector(2.5,0.3,-3.5),
+		OffsetAng = Angle(-9.8,180+1.2,5),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
@@ -1166,12 +1200,14 @@ local datatbl = {
 		ReloadEvent_LoadGun = "weapons/p228/p228_sliderelease.wav",]]
 		ReloadEvent_Start = "weapons/pistol/pistol_reload1.wav",
 		NextFireTime = 0.1,
+		AimOffsetPos = Vector(0,0,0.2),
+		AimOffsetAng = Angle(),
 	},
 
 	["models/weapons/w_smg1.mdl"] = {
 		Priority = 3,
-		OffsetPos = Vector(6.5,1,-4.5),
-		OffsetAng = Angle(11,-0.5,-5),
+		OffsetPos = Vector(6.5,1.5,-4.5),
+		OffsetAng = Angle(11,0.2,-1),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		FreeReload = true,
@@ -1212,11 +1248,12 @@ local datatbl = {
 			--["ValveBiped.Bip01_R_Clavicle"] = {Pos = Vector(2,1,0.5)},
 			--[0] = {Pos = Vector(0,0,0)},
 		},
+		AimOffsetPos = Vector(0,0,-3.1),
 	},
 	["models/weapons/w_irifle.mdl"] = {
 		Priority = 3,
 		OffsetPos = Vector(13.5,1,-2.5),
-		OffsetAng = Angle(-11,179.5,-3),
+		OffsetAng = Angle(-11,178.5,0),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
@@ -1254,11 +1291,13 @@ local datatbl = {
 			--["ValveBiped.Bip01_R_Clavicle"] = {Pos = Vector(2,1,0.5)},
 			--[0] = {Pos = Vector(0,0,0)},
 		},
+		AimOffsetPos = Vector(2,0.4,-3.2),
+		AimOffsetAng = Angle(),
 	},
 	["models/weapons/w_shotgun.mdl"] = {
 		Priority = 3,
-		OffsetPos = Vector(14,1,-4),
-		OffsetAng = Angle(-17,178.5,-3),
+		OffsetPos = Vector(14,0.8,-4),
+		OffsetAng = Angle(-17,177.5,-5),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		BulletDamageType = DMG_BUCKSHOT,
@@ -1301,11 +1340,13 @@ local datatbl = {
 			--["ValveBiped.Bip01_R_Clavicle"] = {Pos = Vector(2,1,0.5)},
 			--[0] = {Pos = Vector(0,0,0)},
 		},
+		AimOffsetPos = Vector(5,0.1,-2.2),
+		AimOffsetAng = Angle(),
 	},
 	["models/weapons/w_357.mdl"] = {
 		Priority = 3,
 		OffsetPos = Vector(-2,1,-2),
-		OffsetAng = Angle(6,-1.5,-3),
+		OffsetAng = Angle(6,-0.8,-1),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
@@ -1336,6 +1377,7 @@ local datatbl = {
 		ReloadEvent_LoadGun = "weapons/357/357_spin1.wav",
 		ReloadEvent_Start = "weapons/357/357_reload4.wav",
 		NextFireTime = 0.5,
+		AimOffsetPos = Vector(0,0,-1),
 	},
 	--Joke Weapons
 	["models/weapons/w_toolgun.mdl"] = {
@@ -1507,7 +1549,7 @@ function datatbl:__index(key)
 			return table.Inherit(key.NSPW_PROP_PROPDATA,datatbl[key:GetModel()])
 		end
 	else
-		return datatbl[isentity(key) and key:GetModel() or key]
+		return datatbl[isentity(key) and key:GetModel() or key] or {}
 	end
 
 end
