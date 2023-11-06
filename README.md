@@ -15,7 +15,7 @@ E+RMB: Drop props
 Heavy Shotguns and Bolt-Action Rifles require press LMB manually to pump/bolt
 
 # Gun Support?
-CS:S Weapons,HL2 firearms(not crossbow or rpg,lol)(not including 357,sad)
+CS:S Weapons,HL2 firearms(not crossbow or rpg,lol)
 
 # Anything required?
 Actually,NOTHING but your brain,be creative plz
@@ -24,7 +24,7 @@ Actually,NOTHING but your brain,be creative plz
 # Support [Insert things here]?
 NPC - Probably
 Nextbot - NO
-Zeta/Lambda Players - No,but I'll try
+Lambda Players - Maybe
 
 # Credits
 Check nspw_sv_mainfunc.lua
