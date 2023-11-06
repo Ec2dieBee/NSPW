@@ -1557,5 +1557,6 @@ end
 setmetatable(MetaTable,datatbl)
 
 NSPW_DATA_PROPDATA = MetaTable
+_NSPW_DATA_PROPDATA = datatbl
 
 print("NSPW的Prop数据现在有[原版]: "..Count)

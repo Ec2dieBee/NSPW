@@ -420,7 +420,9 @@ end
 
 function SWEP:GetStyleData()
 
-	return Style[self.LastStyle or self.HoldType or self:GetHoldType()] or {}
+	
+	--print(self)
+	return Style[self.LastStyle or self.HoldType or (!self.MarkedAsLambdaWep and self:GetHoldType() or "pistol")] or {}
 
 end
 
@@ -621,7 +623,7 @@ if SERVER then
 			if IsValid(tr.Entity) then
 				local trd = util.TraceLine({
 					start = ent:GetPos(),
-					endpos = owner:GetShootPos(),
+					endpos = (isfunction(owner.GetShootPos) and owner:GetShootPos() or owner:EyePos()),
 					filter = filter,
 					mask = MASK_SHOT
 				}) 
@@ -827,7 +829,7 @@ if SERVER then
 
 
 					--ZS模拟器
-					if self:Clip1() == magsize or !owner:KeyDown(IN_RELOAD) then 
+					if self:Clip1() == magsize or (!self.MarkedAsLambdaWep and !owner:KeyDown(IN_RELOAD)) then 
 						self:SendVMAnim((Heavy or !self.NeedPump or !self.InsertedSlug) and ACT_SHOTGUN_RELOAD_FINISH or ACT_VM_RELOAD_DEPLOYED)
 						--print(Heavy , !self.NeedPump)
 						self:SetBlocking(false)
@@ -852,7 +854,7 @@ if SERVER then
 				elseif self.ReloadStage == 1 then
 
 					--print("?")
-					local ac = owner:GetAmmoCount(PropData.AmmoType or "pistol")
+					local ac = self.MarkedAsLambdaWep and 9999 or owner:GetAmmoCount(PropData.AmmoType or "pistol")
 					if ac <= 0 then 
 						self:SetBlocking(false) 
 						self:SendVMAnim((Heavy and !self.NeedPump) and ACT_SHOTGUN_RELOAD_FINISH or ACT_VM_RELOAD_DEPLOYED) 
@@ -866,7 +868,9 @@ if SERVER then
 						--if !Heavy and self.NeedPump then self.NeedPump = false end
 						return
 					end
-					owner:SetAmmo(ac-1, PropData.AmmoType or "pistol")
+
+					if owner:IsPlayer() then owner:SetAmmo(ac-1, PropData.AmmoType or "pistol") end
+
 					self:SetClip1(math.min(self:Clip1()+1,magsize))
 					self.InsertedSlug = true
 
@@ -1062,9 +1066,9 @@ if SERVER then
 
 					end
 
-					local ac = owner:GetAmmoCount(PropData.AmmoType or "pistol") + self:Clip1()
+					local ac = self.MarkedAsLambdaWep and 9999 or owner:GetAmmoCount(PropData.AmmoType or "pistol") + self:Clip1()
 					local mag = math.min(ac,magsize)
-					owner:SetAmmo(ac-mag, PropData.AmmoType or "pistol")
+					if owner:IsPlayer() then owner:SetAmmo(ac-mag, PropData.AmmoType or "pistol") end
 					self:SetClip1(mag)
 					--self.Primary.ClipSize = magsize
 					self:SetBlocking(false)
@@ -1095,14 +1099,14 @@ if SERVER then
 
 		local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
 
-		if !owner:KeyDown(IN_USE) and !self:GetBlocking() and MyStyle.IsGun and PropData.IsGun and self:Clip1() < self:GetMaxClip1() and !self.InReload then
+		if (self.MarkedAsLambdaWep or !owner:KeyDown(IN_USE)) and !self:GetBlocking() and MyStyle.IsGun and PropData.IsGun and self:Clip1() < self:GetMaxClip1() and !self.InReload then
 
 			--print("SEND")
 			if !PropData.FreeReload and tobool(MyStyle.DoubleHand) != tobool(PropData.DoubleHand) then
 				owner:PrintMessage(4,SomeSBStuffs) --翻译...
 				--return
 			else
-				owner:DoReloadEvent()
+				if owner:IsPlayer() then owner:DoReloadEvent() end
 				self:CallOnClient("DoReloadEvent")
 	
 				--self:SendWeaponAnim(ACT_VM_IDLE)
@@ -1471,6 +1475,9 @@ function SWEP:DropMySelf()
 
 		for ent,data in pairs(self.DupeData or {}) do
 			--print("?")
+			if IsValid(ent) then
+				ent:SetNoDraw(ent.NSPW_PROP_SV_NODRAW)
+			end
 			if IsValid(ent) and ent != self.DupeDataC and ent.NSPW_PROP_OLDCOLLISIONGROUP then 
 				ent:FollowBone(NULL,0)
 				--print(ent,ent.NSPW_PROP_MYPARENT)
@@ -2133,6 +2140,7 @@ function SWEP:Deploy()
 		if MyStyle.HolsterPrevVM or MyStyle.InvertDWHL then
 			self:SendWeaponAnim(ACT_VM_HOLSTER)
 		end
+
 		--local Bone = owner:LookupBone("ValveBiped.Bip01_R_Hand") or 0
 		--local BPos,BAng = owner:GetBonePosition(Bone)
 
@@ -2143,20 +2151,14 @@ function SWEP:Deploy()
 		--self:GetWeaponViewModel():AddGestureSequence()
 		--self:Think()
 
-		--[[for ent,data in pairs(self.DupeData or {}) do
+		for ent,data in pairs(self.DupeData or {}) do
 
 			if !IsValid(ent) then continue end
 
-			if !ent.NSPW_PROP_OLDCOLLISIONGROUP then
+			ent:SetNoDraw(ent.NSPW_PROP_SV_NODRAW)
+			
 
-				ent.NSPW_PROP_OLDCOLLISIONGROUP = ent:GetCollisionGroup()
-				--print(ent.NSPW_PROP_OLDCOLLISIONGROUP == COLLISION_GROUP_WORLD)
-
-			end
-
-			ent:SetCollisionGroup(COLLISION_GROUP_DEBRIS)
-
-		end]]
+		end
 
 		--self:Think()
 
@@ -2179,12 +2181,17 @@ function SWEP:Holster()
 
 			if !IsValid(ent) then continue end
 
+			--print("?2")
+
 			ent:FollowBone(NULL,0)
 			--ent:SetMoveParent(owner)
 			--超高级保险措施! 以后再也不用担心玩家找到了! 因为根本找不到!
 			ent:SetPos(Vector(7000,7000,7000))
 			ent:SetCollisionGroup(COLLISION_GROUP_IN_VEHICLE)
-
+			if ent.NSPW_PROP_SV_NODRAW == nil then
+				ent.NSPW_PROP_SV_NODRAW = ent:GetNoDraw()
+			end
+			ent:SetNoDraw(true)
 			for i=0,ent:GetPhysicsObjectCount()-1 do
 				local pobj = ent:GetPhysicsObjectNum(i)
 				if !IsValid(pobj) then continue end
@@ -2323,9 +2330,9 @@ function SWEP:PrimaryAttack()
 
 	if SERVER then
 
-		if game.SinglePlayer() then
+		--[[if game.SinglePlayer() then
 			self:CallOnClient("PrimaryAttack")
-		end
+		end]]
 
 		local MyStyle = self:GetStyleData()
 
@@ -2333,7 +2340,7 @@ function SWEP:PrimaryAttack()
 		--print(#self.WireIO_E2List == 0)
 		local Count = 0
 		self:SetNextPrimaryFire(CurTime()+0.05)
-		for ent,_ in pairs(self.WireIO_E2List) do
+		for ent,_ in pairs(self.WireIO_E2List or {}) do
 
 			--print("?")
 			if !IsValid(ent.entity) then continue end
@@ -2349,8 +2356,8 @@ function SWEP:PrimaryAttack()
 			ent.data.NSPWClk = nil
 
 		end
+			--print("1")
 		if Count == 0 or self.WireIO_ShouldAttack then
-
 
 
 

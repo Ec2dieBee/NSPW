@@ -254,7 +254,7 @@ local ConstraintWhiteList = {
 
 local _ply = FindMetaTable("Player")
 
-function _ply:NSP2W_PickupItem()
+function _ply:NSPW_PickupItem()
 
 	local TargetEnt = self:GetEyeTrace().Entity
 
@@ -441,7 +441,7 @@ function _ply:NSP2W_PickupItem()
 end
 
 concommand.Add("savee_nspw_debug_pickup",function(p)
-	p:NSP2W_PickupItem()
+	p:NSPW_PickupItem()
 end)
 
 hook.Add("ShouldCollide","NSPW_Hooks_NoCollideWeapon",function(e1,e2)
@@ -449,7 +449,7 @@ hook.Add("ShouldCollide","NSPW_Hooks_NoCollideWeapon",function(e1,e2)
 	--print(e1,e2)
 	if IsValid(e1.NSPW_PROP_RELATEDWEAPON) and IsValid(e1.NSPW_PROP_RELATEDWEAPON:GetOwner()) and 
 	(
-		e1.NSPW_PROP_RELATEDWEAPON:GetOwner():GetActiveWeapon() != e1.NSPW_PROP_RELATEDWEAPON
+		(isfunction(e1.NSPW_PROP_RELATEDWEAPON:GetOwner().GetActiveWeapon) and e1.NSPW_PROP_RELATEDWEAPON:GetOwner():GetActiveWeapon() != e1.NSPW_PROP_RELATEDWEAPON)
 		or e2 == e1.NSPW_PROP_RELATEDWEAPON:GetOwner() 
 		or e2.NSPW_PROP_RELATEDWEAPON
 	) then
