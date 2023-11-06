@@ -679,6 +679,8 @@ if SERVER then
 
 					tempval = PropData.MeleeHitEffect
 
+					--PrintTable(PropData)
+
 					if tempval then
 						local ed = EffectData()
 						ed:SetOrigin(tr.HitPos)
@@ -1527,6 +1529,7 @@ end
 
 local Reload = {
 	["anim_reload"] = {0.3,0.85},
+	["anim_reloadrev"] = {0.3,0.85},
 	["anim_bolt"] = {0.1,0.8},
 	["anim_reloadaug"] = {0.1,0.7},
 	["anim_reloadsg"] = true,
