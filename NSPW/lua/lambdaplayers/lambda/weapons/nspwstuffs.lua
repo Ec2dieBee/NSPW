@@ -286,7 +286,7 @@ local function GenLambdaWep(val,data)
 	--local d = duplicator.Paste(NULL,data.DupeData.Entities,data.DupeData.Constraints)
 	--print(d[data.DupeDataC])
 
-	local ht = PropData.IsGun and ( PropData.DoubleHand and "ar2" or "pistol" ) or "melee"
+	local ht = PropData.IsGun and ( PropData.DoubleHand and "ar2" or "revolver" ) or "melee"
 	local anim = PropData.IsGun and ACT_HL2MP_GESTURE_RANGE_ATTACK_REVOLVER or ACT_HL2MP_GESTURE_RANGE_ATTACK_MELEE
 
 
@@ -306,8 +306,8 @@ local function GenLambdaWep(val,data)
 			attacksnd = "",
 	    	hitsnd = "",
 
-			attackrange = PropData.IsGun and ( PropData.DoubleHand and 3500 or 1500 ) or 80,
-			keepdistance = PropData.IsGun and ( PropData.DoubleHand and 500 or 300 ) or 20,
+			attackrange = PropData.IsGun and ( PropData.DoubleHand and 4500 or 2000 ) or 80,
+			keepdistance = PropData.IsGun and ( PropData.DoubleHand and 800 or 500 ) or 20,
 			rateoffire = PropData.NextFireTime or 0.8,
 			clip = PropData.Magsize,
 			bulletcount = 0,
@@ -382,6 +382,9 @@ local function GenLambdaWep(val,data)
 			OnThink = function(own,wep)
 
 				--print("NSPW RUNNING")
+				if !IsValid(own) then return end
+
+				
 				wep:SetOwner(own)
 
 				if wep.nspw_Death and own:Alive() then
@@ -392,11 +395,13 @@ local function GenLambdaWep(val,data)
 				wep:Think()
 
 			end,
-			OnAttack = function(own,wep)
+			OnAttack = function(own,wep,target)
 
 				wep:SetOwner(own)
 
 				if own.l_Clip <= 0 then own:ReloadWeapon() return end
+
+				wep.nspw_LambdaTarget = target
 
 				wep:PrimaryAttack()
 
@@ -420,7 +425,8 @@ local function LoadWeapons()
 
 		if !istable(PropData) then continue end
 
-		local ht = PropData.IsGun and ( PropData.DoubleHand and "ar2" or "pistol" ) or "melee"
+		local ht = PropData.IsGun and ( PropData.DoubleHand and "ar2" or "revolver" ) or "melee"
+		--print(name,ht)
 		local anim = PropData.IsGun and ACT_HL2MP_GESTURE_RANGE_ATTACK_REVOLVER or ACT_HL2MP_GESTURE_RANGE_ATTACK_MELEE
 
 		table.Merge( _LAMBDAPLAYERSWEAPONS, {
@@ -439,8 +445,8 @@ local function LoadWeapons()
 				attacksnd = "",
 	        	hitsnd = "",
 
-				attackrange = PropData.IsGun and ( PropData.DoubleHand and 3500 or 1500 ) or 80,
-				keepdistance = PropData.IsGun and ( PropData.DoubleHand and 500 or 300 ) or 20,
+				attackrange = PropData.IsGun and ( PropData.DoubleHand and 4500 or 2000 ) or 80,
+				keepdistance = PropData.IsGun and ( PropData.DoubleHand and 800 or 500 ) or 20,
 				rateoffire = PropData.NextFireTime or 0.8,
 				clip = PropData.Magsize,
 				bulletcount = 0,
@@ -502,6 +508,8 @@ local function LoadWeapons()
 				OnThink = function(own,wep)
 
 					--print("NSPW RUNNING")
+					if !IsValid(own) then return end
+
 					wep:SetOwner(own)
 
 					if wep.nspw_Death and own:Alive() then
@@ -512,11 +520,13 @@ local function LoadWeapons()
 					wep:Think()
 
 				end,
-				OnAttack = function(own,wep)
+				OnAttack = function(own,wep,target)
 
 					wep:SetOwner(own)
 
 					if own.l_Clip <= 0 then own:ReloadWeapon() return end
+
+					wep.nspw_LambdaTarget = target
 
 					wep:PrimaryAttack()
 
