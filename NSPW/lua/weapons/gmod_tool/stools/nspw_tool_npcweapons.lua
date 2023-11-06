@@ -65,8 +65,9 @@ local ConstraintWhiteList = {
 -- This function/hook is called when the player presses their left click
 function TOOL:LeftClick( tr )
 
+	local owner = self:GetOwner()
 	local ent = tr.Entity
-	if !IsValid(ent) or !ent:IsNPC() or !self.DupeData then return end
+	if !IsValid(ent) or !ent:IsNPC() or !owner.NSPW_TOOLGUN_NPCWEAPONS_DupeData then return end
 	--self:PickupWeapon(wep)
 	--在下一Tick的下一Tick(大概)调用它,因为它出现在客户端需要亿点点Tick
 	--[[timer.Simple(.01,function()
@@ -85,8 +86,8 @@ function TOOL:LeftClick( tr )
 		net.Broadcast()
 
 	end)]]
-	local Dupe = duplicator.Paste(self:GetOwner(), self.DupeData.Entities,self.DupeData.Constraints)
-	local TargetEnt = Dupe[self.DupeDataM]
+	local Dupe = duplicator.Paste(owner, owner.NSPW_TOOLGUN_NPCWEAPONS_DupeData.Entities,owner.NSPW_TOOLGUN_NPCWEAPONS_DupeData.Constraints)
+	local TargetEnt = Dupe[owner.NSPW_TOOLGUN_NPCWEAPONS_DupeDataM]
 
 	local Dupe = duplicator.Copy(TargetEnt)
 
@@ -224,7 +225,7 @@ function TOOL:LeftClick( tr )
 
 
 
-	timer.Simple(.01,function()
+	timer.Simple(.02,function()
 
 		if !IsValid(ent) or !IsValid(wep) then return end
 
@@ -377,8 +378,8 @@ function TOOL:RightClick( tr )
 	duplicator.SetLocalAng(angle_zero)
 	--接替
 	--local Count = {}
-	self.DupeData = Dupe
-	self.DupeDataM = TargetEnt:EntIndex()
+	self:GetOwner().NSPW_TOOLGUN_NPCWEAPONS_DupeData = Dupe
+	self:GetOwner().NSPW_TOOLGUN_NPCWEAPONS_DupeDataM = TargetEnt:EntIndex()
 	--[[for i,data in pairs(table.Copy(Dupe)) do
 		--print(i)
 		local e = Entity(tonumber(i))

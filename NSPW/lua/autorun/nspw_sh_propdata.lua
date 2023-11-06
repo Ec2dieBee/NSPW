@@ -7,11 +7,18 @@ AddCSLuaFile()
 	如果有乘数和加减值,先乘后加
 	对于枪械武器,&标记它可被应用到Attachment(其实就是其它Prop)上
 
+	(难蚌,枪械设置多于近战武器)
+
 	["武器模型路径"] = {
+
+		--全局
 
 		Priority = 2, --优先级越高越优先被放到手上
 		OffsetPos = Vector(-0.4,-0.3,-6), --偏移(以Local计(虽然跟啥也没说一样))
 		OffsetAng = Angle(0,0,180), --偏移(以Local计(虽然跟啥也没说一样))
+
+		--近战
+
 		AttackTimeModify = 0, --负数: 减少下次攻击所需时间,正数相反 :(
 		AttackDamageModify = 15, --负数: 减少伤害,正数相反
 		AttackDamageModifyOffset = 5, --伤害随机值(在伤害-偏移和伤害+偏移之间随机)
@@ -20,6 +27,12 @@ AddCSLuaFile()
 		BlockDamageMul = 0.8, --因格挡导致自己受伤时的伤害乘数
 		BlockDamageType = DMG_GENERIC, --因格挡而受伤时强制的伤害类型
 		BlockDefence = 0, --伤害防御加成(这个值越高能承受不导致武器被击飞的伤害越高)
+		BlockSound = "", --格挡时的音效
+		MeleeHitSound = "", --进攻打到什么玩意时的音效(可为Table)
+		MeleeHitEffect = "", --进攻打到什么玩意时的特效(可为Table)
+
+		--枪械
+
 		IsGun = true, --标记为枪械(在枪械HoldType下可射出子弹)
 		BulletDamageType = DMG_BULLET, --子弹伤害类型
 		BulletCount = 1, --子弹数量
@@ -38,7 +51,8 @@ AddCSLuaFile()
 		end,
 		BulletSpread = Angle(0,1,1), --第一个值没用&
 		BulletSpreadMul = 1, --Attachment Only , 扩散乘数&
-		ReloadSpeedMul = 1, --换弹时间乘数(这是个错误)
+		FreeReload = false, --允许在手枪/步枪双Style下换弹(否则只能在对应Style下换弹,因为我没做)(适用于SMG1,TMP,MAC5等弹夹插在握把上的武器)
+		ReloadSpeedMul = 1, --换弹时间长短乘数(这是个错误,它本来该是速度乘数的)
 		ReloadSpeedAffectMul = 1, --换弹速度干预乘数(Attachment)&
 		ReloadSpeedMulOffset = 0 --换弹速度乘数偏移(Attachment)&
 		RecoilV = 0, --水平后座(一般不用设置)(Attachment: 偏移)&
@@ -49,21 +63,27 @@ AddCSLuaFile()
 		TrueRecoilMul_Offset = 0.05, --这个东西修改的是Mul(所以别大于Mul)&
 		RecoilVMul = 1, --给Attachment用的,修改后座&
 		RecoilHMul = 1, --给Attachment用的,修改后座&
-		ShootSound = "weapons/m4a1/m4a1-1.wav", --射击音效
-		NoAim = false, --禁用瞄准(可能会被移除)
+		ShootSound = "weapons/m4a1/m4a1-1.wav", --射击音效(可为Table)
 		DoubleHand = true, --双手武器(单手使用有惩罚,这玩意拿去标记步枪,霰弹枪等武器)
 		AmmoType = "ar2", --子弹类型
 		Magsize = 30, --弹夹容量(Attachment: 增加/减少的弹容量)
 		MuzzlePos = Vector(5,0,2), --枪口位置(干预特效)
-		MagOnBack = true, --使用和AUG(Famas,MA5B)一样的换弹方式
-		Automatic = true, --是否为自动武器
+		MagOnBack = true, --使用和AUG(Famas,MA5B)一样的换弹方式(手枪: 使用左轮的换弹方式,不管它的弹仓是怎么工作的)
+		Automatic = true, --是否为自动武器&(哪种类型的修改最多就有哪种,e.g: 有5个强制全自动配件,5个强制半自动配件,那么看武器本体是否为全自动(这个当然也会加进去),反正就是比大小)
 		NextFireTime = 0.1, --下次射击的时间(Attachment: 下次射击时间的偏移)
 		NoMag = true, --是否要手动装弹(霰弹枪)
 		PumpAction = true, --泵动霰弹枪
 		BoltAction = true, --栓动武器(实际上栓在左手边因为CSS)
 		(二选一)
-		InsertSound = "weapons/m3/m3_insertshell.wav", --填弹音效
+		InsertSound = "weapons/m3/m3_insertshell.wav", --填弹音效(可为Table)
 		ForceHeavyWeapon = true, --大口径子弹模拟器
+
+		NoAim = false, --禁用瞄准(可能会被移除)
+		AimOffsetPos = Vector(), --瞄准位置偏移
+		AimOffsetAng = Angle(), --瞄准角度偏移
+		AimUseScope = false, --使用瞄准镜瞄准(狙击枪)
+		AimMouseSensMul = 1, --瞄准时鼠标灵敏度乘数(只要你瞄准你灵敏度就会低)
+		AimFovMul = 1, --瞄准时FOV乘数(瞄准时有降低,越低FOV越小(适用瞄准镜))
 
 		BulletTrace = "idk", --子弹的轨迹(默认为普通子弹)&
 		MuzzleFlash = "idk", --枪口火光(默认为普通火光)&
@@ -88,7 +108,18 @@ AddCSLuaFile()
 			["ValveBiped.Bip01_L_Forearm"] = {Ang = Angle(3,5,0)},
 			["ValveBiped.Bip01_L_Upperarm"] = {Ang = Angle(0,-3,0)},
 			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(0,0,2),Ang = Angle(0,0,2)},
-		}.
+		},
+		--全局骨骼修改乘数&(仅单手枪械)
+		BoneManipulatesPistol = {
+			[BoneName] = {Pos = Vector(),Ang = Angle()}
+		},
+		--非换弹骨骼修改乘数&(仅单手枪械)
+		BoneManipulatesAnimationPistol  = {
+			["ValveBiped.Bip01_L_Hand"] = {Ang = Angle(-30,0,90)},
+			["ValveBiped.Bip01_L_Forearm"] = {Ang = Angle(3,5,0)},
+			["ValveBiped.Bip01_L_Upperarm"] = {Ang = Angle(0,-3,0)},
+			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(0,0,2),Ang = Angle(0,0,2)},
+		},
 
 	}
 ]]
@@ -104,6 +135,37 @@ local datatbl = {
 		AttackDamageType = DMG_CLUB, --伤害类型
 		BlockMulAdjust = 0.15, --格挡伤害乘数,值越高格挡时受到的伤害越低
 		BlockDamageMul = 0.8, --因格挡导致自己受伤时的伤害乘数
+		--BlockDamageType = DMG_GENERIC, --因格挡而受伤时强制的伤害类型
+	},
+	["models/weapons/w_spade.mdl"] = {
+		Priority = 2, --优先级越高越优先被放到手上
+		OffsetPos = Vector(0,0.5,-45), --偏移(以Local计(虽然跟啥也没说一样))
+		OffsetAng = Angle(0,0,180), --偏移(以Local计(虽然跟啥也没说一样))
+		AttackTimeModify = 1, --负数: 减少下次攻击所需时间,正数相反 :(
+		AttackDamageModify = 18, --负数: 减少伤害,正数相反
+		AttackDamageModifyOffset = 5, --伤害随机值
+		AttackDamageType = DMG_CLUB, --伤害类型
+		BlockMulAdjust = 0.25, --格挡伤害乘数,值越高格挡时受到的伤害越低
+		BlockDamageMul = 0.7, --因格挡导致自己受伤时的伤害乘数
+		--BlockDamageType = DMG_GENERIC, --因格挡而受伤时强制的伤害类型
+	},
+	["models/weapons/w_stunbaton.mdl"] = {
+		Priority = 2, --优先级越高越优先被放到手上
+		OffsetPos = Vector(0,0.5,-7), --偏移(以Local计(虽然跟啥也没说一样))
+		OffsetAng = Angle(-90,90,0), --偏移(以Local计(虽然跟啥也没说一样))
+		AttackTimeModify = 0.65, --负数: 减少下次攻击所需时间,正数相反 :(
+		AttackDamageModify = 12, --负数: 减少伤害,正数相反
+		AttackDamageModifyOffset = 3, --伤害随机值
+		AttackDamageType = DMG_SHOCK, --伤害类型
+		BlockMulAdjust = 0.15, --格挡伤害乘数,值越高格挡时受到的伤害越低
+		BlockDamageMul = 0.9, --因格挡导致自己受伤时的伤害乘数
+		MeleeHitSound = {
+			"weapons/stunstick/stunstick_fleshhit1.wav",
+			"weapons/stunstick/stunstick_fleshhit2.wav",
+			"weapons/stunstick/stunstick_impact1.wav",
+			"weapons/stunstick/stunstick_impact2.wav",
+		},
+		MeleeHitEffect = "StunstickImpact",
 		--BlockDamageType = DMG_GENERIC, --因格挡而受伤时强制的伤害类型
 	},
 	["models/props_junk/harpoon002a.mdl"] = {
@@ -151,26 +213,14 @@ local datatbl = {
 		AttackDamageModifyOffset = 3,
 		AttackDamageType = DMG_SLASH,
 	},
-	["models/items/battery.mdl"] = {
-		OffsetPos = Vector(-1,-1,5),
-		AttackDamageType = DMG_ENERGYBEAM,
-		RecoilVMul = 1.5,
-		BulletCallback = function(self,attacker,trace,damageinfo,tr,_,he)
-			damageinfo:SetDamage(damageinfo:GetDamage()+math.random(8,13))
-			damageinfo:SetDamageType(bit.bor(damageinfo:GetDamage(),DMG_ENERGYBEAM))
-			tr("GaussTracer")
-			he("StunstickImpact")
-		end,
-		BulletSpreadMul = 1.65,
-	},
 
 
 	--CSS枪械
 
 	["models/weapons/w_pist_elite_single.mdl"] = {
 		Priority = 3,
-		OffsetPos = Vector(1,0,2.5),
-		OffsetAng = Angle(2,0,0),
+		OffsetPos = Vector(1,0.8,2.2),
+		OffsetAng = Angle(10.6,-0.5,-2),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
@@ -196,11 +246,13 @@ local datatbl = {
 		ReloadEvent_ClipOut = "weapons/elite/elite_clipout.wav",
 		ReloadEvent_ClipIn = "weapons/elite/elite_rightclipin.wav",
 		ReloadEvent_LoadGun = "weapons/elite/elite_sliderelease.wav",
+		AimOffsetPos = Vector(0,0,-0.3),
+		AimOffsetAng = Angle(),
 	},
 	["models/weapons/w_pist_usp.mdl"] = {
 		Priority = 3,
-		OffsetPos = Vector(0.7,0,2.5),
-		OffsetAng = Angle(2,0,0),
+		OffsetPos = Vector(1,0.8,2),
+		OffsetAng = Angle(10.6,-0.5,-2),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
@@ -229,8 +281,8 @@ local datatbl = {
 	},
 	["models/weapons/w_pist_deagle.mdl"] = {
 		Priority = 3,
-		OffsetPos = Vector(0.7,0,2.3),
-		OffsetAng = Angle(2,0,0),
+		OffsetPos = Vector(0.2,0.8,2.3),
+		OffsetAng = Angle(10,-0.5,-2),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
@@ -250,17 +302,21 @@ local datatbl = {
 		--RecoilHMul = 1, --给Attachment用的
 		ShootSound = "weapons/deagle/deagle-1.wav",
 		NoAim = false,
+		ForceHeavyWeapon = true,
 		AmmoType = "pistol",
 		Magsize = 7,
 		MuzzlePos = Vector(0,0,4),
 		ReloadEvent_ClipOut = "weapons/deagle/de_clipout.wav",
 		ReloadEvent_ClipIn = "weapons/deagle/de_clipin.wav",
 		ReloadEvent_LoadGun = "weapons/deagle/de_slideback.wav",
+		NextFireTime = 0.25,
+		AimOffsetPos = Vector(0,0,-0.3),
+		AimOffsetAng = Angle(),
 	},
 	["models/weapons/w_pist_fiveseven.mdl"] = {
 		Priority = 3,
-		OffsetPos = Vector(0.7,0,2),
-		OffsetAng = Angle(2,0,0),
+		OffsetPos = Vector(1.3,0.8,2),
+		OffsetAng = Angle(10.6,-0.5,-2),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
@@ -286,11 +342,13 @@ local datatbl = {
 		ReloadEvent_ClipOut = "weapons/fiveseven/fiveseven_clipout.wav",
 		ReloadEvent_ClipIn = "weapons/fiveseven/fiveseven_clipin.wav",
 		ReloadEvent_LoadGun = "weapons/fiveseven/fiveseven_sliderelease.wav",
+		AimOffsetPos = Vector(0,0,0.2),
+		AimOffsetAng = Angle(),
 	},
 	["models/weapons/w_pist_glock18.mdl"] = {
 		Priority = 3,
-		OffsetPos = Vector(0.7,0,2.2),
-		OffsetAng = Angle(2,0,0),
+		OffsetPos = Vector(1,0.8,2.2),
+		OffsetAng = Angle(10.6,0,-2),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
@@ -318,11 +376,13 @@ local datatbl = {
 		ReloadEvent_ClipIn = "weapons/glock/glock_clipin.wav",
 		ReloadEvent_LoadGun = "weapons/glock/glock_sliderelease.wav",
 		NextFireTime = 0.1,
+		AimOffsetPos = Vector(0,0,0.1),
+		AimOffsetAng = Angle(),
 	},
 	["models/weapons/w_pist_p228.mdl"] = {
 		Priority = 3,
-		OffsetPos = Vector(0.7,0,2.2),
-		OffsetAng = Angle(2,0,0),
+		OffsetPos = Vector(0.8,0.8,2.2),
+		OffsetAng = Angle(10.6,0,-2),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
@@ -353,7 +413,7 @@ local datatbl = {
 	["models/weapons/w_rif_m4a1.mdl"] = {
 		Priority = 3,
 		OffsetPos = Vector(10,1,1.7),
-		OffsetAng = Angle(11,-0.5,-5),
+		OffsetAng = Angle(11,-0.5,-2),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
@@ -385,6 +445,8 @@ local datatbl = {
 		ReloadEvent_ClipIn = "weapons/m4a1/m4a1_clipin.wav",
 		ReloadEvent_LoadGun = "weapons/m4a1/m4a1_boltpull.wav",
 		--ReloadEvent_End = "weapons/m4a1/m4a1_unsil-1.wav",
+		AimOffsetPos = Vector(0,0,-3.4),
+		AimOffsetAng = Angle(),
 	},
 	["models/weapons/w_rif_aug.mdl"] = {
 		Priority = 3,
@@ -415,18 +477,22 @@ local datatbl = {
 		MagOnBack = true,
 		MuzzlePos = Vector(5,0,2),
 		Automatic = true,
-		NextFireTime = 0.07,
+		NextFireTime = 0.12,
 		ReloadEvent_ClipOut = "weapons/aug/aug_clipout.wav",
 		ReloadEvent_ClipIn = "weapons/aug/aug_clipin.wav",
 		ReloadEvent_LoadGun = "weapons/aug/aug_boltpull.wav",
 		BoneManipulatesAnimation = {
 			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(0,-1.5,-0.5)},
 		},
+		AimUseScope = true,
+		AimOffsetPos = Vector(0,0,-3.4),
+		AimOffsetAng = Angle(),
+		AimFovMul = 0.9
 	},
 	["models/weapons/w_rif_galil.mdl"] = {
 		Priority = 3,
 		OffsetPos = Vector(10,1,2),
-		OffsetAng = Angle(11,-0.5,-5),
+		OffsetAng = Angle(11,-0.5,-1),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
@@ -458,6 +524,8 @@ local datatbl = {
 		BoneManipulatesAnimation = {
 			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(0,-1.5,-0.5)},
 		},
+		AimOffsetPos = Vector(0,0,-2.2),
+		AimOffsetAng = Angle(),
 	},
 	["models/weapons/w_rif_sg552.mdl"] = {
 		Priority = 3,
@@ -494,11 +562,15 @@ local datatbl = {
 		BoneManipulatesAnimation = {
 			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(0,-1.5,-0.5)},
 		},
+		AimUseScope = true,
+		AimOffsetPos = Vector(0,0,-3),
+		AimOffsetAng = Angle(),
+		AimFovMul = 0.9
 	},
 	["models/weapons/w_shot_xm1014.mdl"] = {
 		Priority = 3,
 		OffsetPos = Vector(10,1,2),
-		OffsetAng = Angle(11,-0.5,-5),
+		OffsetAng = Angle(11,-0.5,-2),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		BulletDamageType = DMG_BUCKSHOT,
@@ -516,7 +588,6 @@ local datatbl = {
 		TrueRecoilMul_Offset = 0.1, --这个东西修改的是Mul
 		--RecoilVMul = 1, --给Attachment用的
 		--RecoilHMul = 1, --给Attachment用的
-		ShootSound = "weapons/sg552/sg552-1.wav",
 		ShootSound = "weapons/xm1014/xm1014-1.wav",
 		InsertSound = "weapons/xm1014/xm1014_insertshell.wav",
 		NoAim = false,
@@ -527,11 +598,13 @@ local datatbl = {
 		MuzzlePos = Vector(5,0,2),
 		Automatic = true,
 		NextFireTime = 0.5,
+		AimOffsetPos = Vector(0,0,-1),
+		AimOffsetAng = Angle(),
 	},
 	["models/weapons/w_rif_famas.mdl"] = {
 		Priority = 3,
 		OffsetPos = Vector(11,1,1.7),
-		OffsetAng = Angle(11,-0.5,-5),
+		OffsetAng = Angle(11,-0.5,-2),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
@@ -564,13 +637,16 @@ local datatbl = {
 		BoneManipulatesAnimation = {
 			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(0,-1.5,-0.5)},
 		},
+		AimOffsetPos = Vector(0,0,-4.5),
+		AimOffsetAng = Angle(),
 	},
 	["models/weapons/w_smg_mac10.mdl"] = {
 		Priority = 3,
-		OffsetPos = Vector(0.7,0,3),
-		OffsetAng = Angle(5,0,0),
+		OffsetPos = Vector(0.3,0.8,3),
+		OffsetAng = Angle(13.6,-0.8,-2),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
+		FreeReload = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
 		BulletDamage = 6,
@@ -584,6 +660,7 @@ local datatbl = {
 		RecoilH_Offset = 0.15,
 		TrueRecoilMul = 0.15, --枪口上跳?(不是ViewPunch),建议不大于1
 		TrueRecoilMul_Offset = 0.05, --这个东西修改的是Mul
+		DoubleHand = true,
 		--RecoilVMul = 1, --给Attachment用的
 		--RecoilHMul = 1, --给Attachment用的
 		ShootSound = "weapons/mac10/mac10-1.wav",
@@ -596,13 +673,26 @@ local datatbl = {
 		ReloadEvent_ClipOut = "weapons/mac10/mac10_clipout.wav",
 		ReloadEvent_ClipIn = "weapons/mac10/mac10_clipin.wav",
 		ReloadEvent_LoadGun = "weapons/mac10/mac10_boltpull.wav",
+		BoneManipulates = {
+			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(-3,-5,-4)},
+			["ValveBiped.Bip01_R_Clavicle"] = {Pos = Vector(2,1,0.5)},
+			--[0] = {Pos = Vector(0,0,0)},
+		},
+		BoneManipulatesAnimation = {
+			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(3,1,4)},
+			--["ValveBiped.Bip01_R_Clavicle"] = {Pos = Vector(2,1,0.5)},
+			--[0] = {Pos = Vector(0,0,0)},
+		},
+		AimOffsetPos = Vector(0,0,-4),
+		AimOffsetAng = Angle(),
 	},
 	["models/weapons/w_smg_p90.mdl"] = {
 		Priority = 3,
 		OffsetPos = Vector(-2,1,4.5),
-		OffsetAng = Angle(11,-0.5,-5),
+		OffsetAng = Angle(11,-1.6,-2),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
+		DoubleHand = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
 		BulletDamage = 8,
@@ -634,13 +724,16 @@ local datatbl = {
 			--["ValveBiped.Bip01_R_Clavicle"] = {Pos = Vector(-2,-5,-2.5)},
 			--[0] = {Pos = Vector(0,0,0)},
 		},
+		AimOffsetPos = Vector(0,0,-5),
+		AimOffsetAng = Angle(),
 	},
 	["models/weapons/w_smg_tmp.mdl"] = {
 		Priority = 3,
-		OffsetPos = Vector(4,1,3),
-		OffsetAng = Angle(11,-0.5,-5),
+		OffsetPos = Vector(4,0.5,3),
+		OffsetAng = Angle(11,-2.5,-1),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
+		FreeReload = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
 		BulletDamage = 6,
@@ -659,9 +752,10 @@ local datatbl = {
 		ShootSound = "weapons/tmp/tmp-1.wav",
 		NoAim = false,
 		AmmoType = "smg1",
+		DoubleHand = true,
 		--MagOnBack = true,
 		Magsize = 25,
-		MuzzlePos = Vector(5,0,2),
+		MuzzlePos = Vector(2,0,3.5),
 		Automatic = true,
 		NextFireTime = 0.06,
 		ReloadEvent_ClipOut = "weapons/tmp/tmp_clipout.wav",
@@ -677,6 +771,8 @@ local datatbl = {
 			--["ValveBiped.Bip01_R_Clavicle"] = {Pos = Vector(2,1,0.5)},
 			--[0] = {Pos = Vector(0,0,0)},
 		},
+		AimOffsetPos = Vector(2,0,-3.2),
+		AimOffsetAng = Angle(),
 	},
 	["models/weapons/w_snip_awp.mdl"] = {
 		Priority = 3,
@@ -707,6 +803,7 @@ local datatbl = {
 		MuzzlePos = Vector(5,0,2),
 		BoltAction = true,
 		Automatic = true,
+		DoubleHand = true,
 		NextFireTime = 0.5, --拉栓费点时间
 		ReloadEvent_ClipOut = "weapons/awp/awp_clipout.wav",
 		ReloadEvent_ClipIn = "weapons/awp/awp_clipin.wav",
@@ -723,6 +820,11 @@ local datatbl = {
 			--["ValveBiped.Bip01_R_Clavicle"] = {Pos = Vector(2,1,0.5)},
 			--[0] = {Pos = Vector(0,0,0)},
 		},]]
+		AimOffsetPos = Vector(0,0,-3.2),
+		AimOffsetAng = Angle(),
+		AimUseScope = true,
+		AimMouseSensMul = 0.2,
+		AimFovMul = 0.2,
 	},
 	["models/weapons/w_snip_scout.mdl"] = {
 		Priority = 3,
@@ -753,6 +855,7 @@ local datatbl = {
 		MuzzlePos = Vector(5,0,2),
 		BoltAction = true,
 		Automatic = true,
+		DoubleHand = true,
 		NextFireTime = 0.2, --拉栓费点时间
 		ReloadEvent_ClipOut = "weapons/scout/scout_clipout.wav",
 		ReloadEvent_ClipIn = "weapons/scout/scout_clipin.wav",
@@ -762,6 +865,11 @@ local datatbl = {
 			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(1,2.5,1.2)},
 			--[0] = {Pos = Vector(0,0,0)},
 		},
+		AimOffsetPos = Vector(0,0,-3.2),
+		AimOffsetAng = Angle(),
+		AimUseScope = true,
+		AimMouseSensMul = 0.35,
+		AimFovMul = 0.3,
 		--[[BoneManipulatesAnimation = {
 			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(1,2.5,1.2)},
 			--["ValveBiped.Bip01_R_Clavicle"] = {Pos = Vector(2,1,0.5)},
@@ -791,6 +899,7 @@ local datatbl = {
 		--RecoilHMul = 1, --给Attachment用的
 		ShootSound = "weapons/g3sg1/g3sg1-1.wav",
 		NoAim = false,
+		DoubleHand = true,
 		AmmoType = "ar2",
 		--MagOnBack = true,
 		Magsize = 20,
@@ -802,9 +911,15 @@ local datatbl = {
 		ReloadEvent_ClipIn = "weapons/g3sg1/g3sg1_clipin.wav",
 		ReloadEvent_LoadGun = "weapons/g3sg1/g3sg1_slide.wav",
 		BoneManipulates = {
-			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(1.5,2.5,1.2)},
+			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(1,-2,-1.6)},
+			["ValveBiped.Bip01_R_Clavicle"] = {Pos = Vector(0,-2,-2)},
 			--[0] = {Pos = Vector(0,0,0)},
 		},
+		AimOffsetPos = Vector(0,0,-3.2),
+		AimOffsetAng = Angle(),
+		AimUseScope = true,
+		AimMouseSensMul = 0.4,
+		AimFovMul = 0.4,
 		--[[BoneManipulatesAnimation = {
 			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(1,2.5,1.2)},
 			--["ValveBiped.Bip01_R_Clavicle"] = {Pos = Vector(2,1,0.5)},
@@ -834,6 +949,7 @@ local datatbl = {
 		--RecoilHMul = 1, --给Attachment用的
 		ShootSound = "weapons/sg550/sg550-1.wav",
 		NoAim = false,
+		DoubleHand = true,
 		AmmoType = "ar2",
 		--MagOnBack = true,
 		Magsize = 20,
@@ -844,15 +960,6 @@ local datatbl = {
 		ReloadEvent_ClipOut = "weapons/sg550/sg550_clipout.wav",
 		ReloadEvent_ClipIn = "weapons/sg550/sg550_clipin.wav",
 		ReloadEvent_LoadGun = "weapons/sg550/sg550_boltpull.wav",
-		--[[BoneManipulates = {
-			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(1.5,2.5,1.2)},
-			--[0] = {Pos = Vector(0,0,0)},
-		},]]
-		--[[BoneManipulatesAnimation = {
-			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(1,2.5,1.2)},
-			--["ValveBiped.Bip01_R_Clavicle"] = {Pos = Vector(2,1,0.5)},
-			--[0] = {Pos = Vector(0,0,0)},
-		},]]
 	},
 	["models/weapons/w_smg_mp5.mdl"] = {
 		Priority = 3,
@@ -860,6 +967,7 @@ local datatbl = {
 		OffsetAng = Angle(11,-0.5,-5),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
+		DoubleHand = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
 		BulletDamage = 7,
@@ -1001,7 +1109,7 @@ local datatbl = {
 		BulletCount = 1,
 		BulletDamage = 5,
 		BulletDamageOffset = 3,
-		BulletSpread = Angle(0,2,2), --第一个值没用
+		BulletSpread = Angle(0,1.25,1.35), --第一个值没用
 		ReloadSpeedMul = 1.35,
 		ReloadSpeedAffectMul = 1,
 		RecoilV = 0,
@@ -1017,7 +1125,7 @@ local datatbl = {
 		DoubleHand = true,
 		AmmoType = "smg1",
 		Magsize = 100,
-		MuzzlePos = Vector(5,0,2),
+		MuzzlePos = Vector(6,-0.5,3.5),
 		Automatic = true,
 		NextFireTime = 0.05,
 		ReloadEvent_ClipOut = "weapons/m249/m249_boxout.wav",
@@ -1030,7 +1138,7 @@ local datatbl = {
 	["models/weapons/w_pistol.mdl"] = {
 		Priority = 3,
 		OffsetPos = Vector(2.5,0,-3.5),
-		OffsetAng = Angle(-1,180-1.5,3),
+		OffsetAng = Angle(-9.8,180+1,6),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
@@ -1066,6 +1174,7 @@ local datatbl = {
 		OffsetAng = Angle(11,-0.5,-5),
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
+		FreeReload = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
 		BulletDamage = 6,
@@ -1193,6 +1302,75 @@ local datatbl = {
 			--[0] = {Pos = Vector(0,0,0)},
 		},
 	},
+	["models/weapons/w_357.mdl"] = {
+		Priority = 3,
+		OffsetPos = Vector(-2,1,-2),
+		OffsetAng = Angle(6,-1.5,-3),
+		AttackDamageType = DMG_CLUB,
+		IsGun = true,
+		BulletDamageType = DMG_BULLET,
+		BulletCount = 1,
+		BulletDamage = 45,
+		BulletDamageOffset = 10,
+		BulletSpread = Angle(0,0.25,0.25), --第一个值没用
+		ReloadSpeedMul = 1.35,
+		ReloadSpeedAffectMul = 1,
+		RecoilV = 0,
+		RecoilV_Offset = 0.4,
+		RecoilH = 0.55,
+		RecoilH_Offset = 0.2,
+		TrueRecoilMul = 0.45, --枪口上跳?(不是ViewPunch),建议不大于1
+		TrueRecoilMul_Offset = 0.2, --这个东西修改的是Mul
+		--RecoilVMul = 1, --给Attachment用的
+		--RecoilHMul = 1, --给Attachment用的
+		ShootSound = "weapons/357/357_fire3.wav",
+		NoAim = false,
+		AmmoType = "357",
+		--ForceHeavyWeapon = true,
+		Magsize = 6,
+		MuzzlePos = Vector(0,0,4),
+		MagOnBack = true,
+		ForceHeavyWeapon = true,
+		ReloadEvent_ClipOut = "weapons/357/357_reload1.wav",
+		ReloadEvent_ClipIn = "weapons/357/357_reload3.wav",
+		ReloadEvent_LoadGun = "weapons/357/357_spin1.wav",
+		ReloadEvent_Start = "weapons/357/357_reload4.wav",
+		NextFireTime = 0.5,
+	},
+	--Joke Weapons
+	["models/weapons/w_toolgun.mdl"] = {
+		Priority = 3,
+		OffsetPos = Vector(-2.5,0.6,-1.5),
+		OffsetAng = Angle(10,-0.5,-2),
+		AttackDamageType = DMG_CLUB,
+		IsGun = true,
+		BulletDamageType = DMG_BULLET,
+		BulletCount = 1,
+		BulletDamage = 10,
+		BulletDamageOffset = 2,
+		BulletSpread = Angle(0,0.05,0.05), --第一个值没用
+		ReloadSpeedMul = 1,
+		ReloadSpeedAffectMul = 1,
+		RecoilV = 0,
+		RecoilV_Offset = 0.2,
+		RecoilH = 0.35,
+		RecoilH_Offset = 0.1,
+		TrueRecoilMul = 0.55, --枪口上跳?(不是ViewPunch),建议不大于1
+		TrueRecoilMul_Offset = 0.1, --这个东西修改的是Mul
+		--RecoilVMul = 1, --给Attachment用的
+		--RecoilHMul = 1, --给Attachment用的
+		ShootSound = "weapons/pistol/pistol_fire2.wav",
+		NoAim = false,
+		AmmoType = "pistol",
+		Magsize = 18,
+		MuzzlePos = Vector(0,0,4),
+		MagOnBack = true,
+		--[[ReloadEvent_ClipOut = "weapons/p228/p228_clipout.wav",
+		ReloadEvent_ClipIn = "weapons/p228/p228_clipin.wav",
+		ReloadEvent_LoadGun = "weapons/p228/p228_sliderelease.wav",]]
+		ReloadEvent_Start = "weapons/pistol/pistol_reload1.wav",
+		NextFireTime = 0.1,
+	},
 	--Attachment
 	["models/items/combine_rifle_ammo01.mdl"] = {
 		
@@ -1203,11 +1381,63 @@ local datatbl = {
 		end,
 
 	},
+	["models/items/battery.mdl"] = {
+		OffsetPos = Vector(-1,-1,5),
+		AttackDamageType = DMG_ENERGYBEAM,
+		RecoilVMul = 1.5,
+		BulletCallback = function(self,attacker,trace,damageinfo,tr,_,he)
+			damageinfo:SetDamage(damageinfo:GetDamage()+math.random(8,13))
+			damageinfo:SetDamageType(bit.bor(damageinfo:GetDamage(),DMG_ENERGYBEAM))
+			tr("GaussTracer")
+			he("StunstickImpact")
+		end,
+		BulletSpreadMul = 1.65,
+		NextFireTime = -0.05,
+	},
+	["models/items/car_battery01.mdl"] = {
+		
+		BulletTrace = "HunterTracer",
+		BulletCallback = function(self,attacker,trace,damageinfo,tr)
+			damageinfo:SetDamageType(bit.bor(damageinfo:GetDamageType(),DMG_SHOCK))
+			damageinfo:SetDamage(damageinfo:GetDamage()+math.random(1,3))
+			--tr("HunterTracer")
+			BulletSpreadMul = 0.55
+			ReloadSpeedMulOffset = 0.3
+		end,
+		NextFireTime = -0.03,
+
+	},
 	["models/items/combine_rifle_cartridge01.mdl"] = {
 		
 		Magsize = 25,
 		RecoilVMul = 0.95,
 		ReloadSpeedMulOffset = 0.15,
+
+	},
+	["models/items/boxsrounds.mdl"] = {
+		
+		Magsize = 35,
+		RecoilVMul = 0.85,
+		ReloadSpeedMulOffset = 0.1,
+		Automatic = true,
+		NextFireTime = 0.02,
+
+	},
+	["models/items/boxmrounds.mdl"] = {
+		
+		Magsize = 50,
+		RecoilVMul = 0.55,
+		ReloadSpeedMulOffset = 0.3,
+		Automatic = true,
+		NextFireTime = 0.04,
+
+	},
+	["models/items/boxbuckshot.mdl"] = {
+		
+		Magsize = 8,
+		BulletSpreadMul = 2,
+		BulletCount = 3,
+		NextFireTime = 0.15,
 
 	},
 }
@@ -1247,7 +1477,8 @@ InheritFromData("models/weapons/w_rif_m4a1_silencer.mdl","models/weapons/w_rif_m
 	NextFireTime = 0.08,
 })
 InheritFromData("models/weapons/w_pist_usp_silencer.mdl","models/weapons/w_pist_usp.mdl",{
-	OffsetPos = Vector(0.7,0,2),
+	OffsetPos = Vector(1,0.8,2),
+		--OffsetAng = Angle(10.6,-0.5,-2),,
 	RecoilV = 0,
 	RecoilV_Offset = 0.28,
 	RecoilH = 0.3,
@@ -1266,6 +1497,23 @@ for _,_ in pairs(datatbl) do
 	Count = Count+1
 end
 
-NSPW_DATA_PROPDATA = datatbl
+local MetaTable = {}
+function datatbl:__index(key)
+
+	if isentity(key) and IsValid(key) and key.NSPW_PROP_PROPDATA then
+		if key.NSPW_PROP_PROPDATA_FORCEOVERRIDE then
+			return key.NSPW_PROP_PROPDATA
+		else
+			return table.Inherit(key.NSPW_PROP_PROPDATA,datatbl[key:GetModel()])
+		end
+	else
+		return datatbl[isentity(key) and key:GetModel() or key]
+	end
+
+end
+
+setmetatable(MetaTable,datatbl)
+
+NSPW_DATA_PROPDATA = MetaTable
 
 print("NSPW的Prop数据现在有[原版]: "..Count)

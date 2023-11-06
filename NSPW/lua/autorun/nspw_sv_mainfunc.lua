@@ -28,19 +28,31 @@
 	延迟判定(差不多)
 
 	[需进一步观望的]
+	枪械角度强制兼容(说实话手对上了角度也就差不多了)
 	Parented Entities(父子级实体)支持(修复了..?)
 	更好的Network(?)
 	格挡(武器击飞)
+	NPC Support
+	单手枪械动画
 
 	[未 竟 事 业]
+	近战动画重做
+	Zeta(其实是Lambda) NPCS 兼容
+	NPC神必小武器支持(怎么刻数据?)
 	枪械系统完善
+	-瞄准
 	Attachment(附加Prop)
 	PropData100%全收集
 	便于他人查看的UI
 	翻新,以及SPW彩蛋(指暴击系统和一枪头模拟器)
+	优化
+
+	[半步入土的]
+	流星锤支持
 
 	[死了的]
 	(啥时候能捡起布娃娃?)(估计不行了,限于引擎)
+	INVSYS(不这个其实是另一个Addon)
 	
 ]]
 
@@ -65,6 +77,7 @@ end)
 net.Receive("NSPW_TransPropTableMessage",function(_,p)
 
 	local Wep = net.ReadEntity()
+	if !IsValid(Wep) then return end
 	net.Start("NSPW_TransPropTableMessage")
 		net.WriteEntity(Wep)
 		net.WriteEntity(TargetEnt)

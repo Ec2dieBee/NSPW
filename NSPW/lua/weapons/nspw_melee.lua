@@ -25,6 +25,8 @@ local TestTbl =
 	"normal",
 }
 
+local SomeSBStuffs = "Wrong HoldType >:)"
+
 --汉化,请
 --确保这些东西在客户端被直接引用的时候是不影响主功能的
 --(反 作 弊)
@@ -93,7 +95,7 @@ local Style = {
 		AttackVM = 0,
 		VM = "models/weapons/c_arms.mdl",
 	},]]
-	["fist"] = {
+	--[[["fist"] = {
 		Name = "Hold2",
 		Desc = "Hold your weapon",
 		Goods = "Always blocking \n (good for shields)",
@@ -105,7 +107,7 @@ local Style = {
 		AttackVM = 0,
 		InvertDWHL = true,
 		VM = "models/weapons/c_yhg_un_itemanim.mdl",
-	},
+	},]]
 	["normal"] = {
 		Name = "Do nothing",
 		Desc = "Lay down your hand",
@@ -137,12 +139,17 @@ local Style = {
 		AttackStart = 0.15,
 		AttackEnd = 0.35,
 		AttackVM = 0,
-		VM = "models/weapons/c_pistol.mdl",
+		VM = "models/weapons/c_nspw_pistol.mdl",
 		IsGun = true,
 		ReloadTime = 2,
 		RecoilMul = 2,
-		VMPropOffsetPos = Vector(0,0,0),
-		VMPropOffsetAng = Angle(1.5,-0.5,0),
+		VMOffsetPos = Vector(-1,0,0.5),
+		VMOffsetAng = Angle(0,0,0),
+		VMPropOffsetPos = Vector(0,-0.3,0.5),
+		VMPropOffsetAng = Angle(13,14.5,-1),
+		BoneManipulatesAnimation = {
+			["ValveBiped.Bip01_L_Clavicle"] = {Ang = Angle(35,-35,0)},
+		},
 		--HolsterPrevVM = true,
 	},
 	["revolver"] = {
@@ -154,13 +161,13 @@ local Style = {
 		AttackStart = 0.15,
 		AttackEnd = 0.35,
 		AttackVM = 0,
-		VM = "models/weapons/cstrike/c_pist_fiveseven.mdl",
-		VMOffsetPos = Vector(0,0,0),
-		VMOffsetAng = Angle(0,0,0),
+		VM = "models/weapons/c_nspw_pistol.mdl",
 		IsGun = true,
 		ReloadTime = 2,
-		VMPropOffsetPos = Vector(0,-0.8,0),
-		VMPropOffsetAng = Angle(0.8,9,-5),
+		VMOffsetPos = Vector(-1,0,0.5),
+		VMOffsetAng = Angle(0,0,0),
+		VMPropOffsetPos = Vector(0,-0.3,0.5),
+		VMPropOffsetAng = Angle(13,14.5,-1),
 		--HolsterPrevVM = true,
 	},
 	["ar2"] = {
@@ -314,6 +321,7 @@ end]]
 function SWEP:SetupDataTables()
 
 	self:NetworkVar("Bool",0,"Blocking")
+	self:NetworkVar("Bool",1,"Aiming")
 	--self:NetworkVar("Bool",0,"Reloading")
 	self:NetworkVar("Float",0,"BlockStartTime")
 	--self:NetworkVar("String",0,"Style")
@@ -422,6 +430,7 @@ if SERVER then
 	function SWEP:SetStyle(s)
 
 		self.InReload = false
+		self:SetAiming(false)
 
 		self:SendWeaponAnim(ACT_VM_IDLE) --清空之前的动画
 		local owner = self:GetOwner()
@@ -485,7 +494,7 @@ if SERVER then
 			--print(owner:GetPoseParameterName(3))
 		if self.DupeDataC:GetParent() != owner then
 
-			local PropData = NSPW_DATA_PROPDATA[self.DupeDataC:GetModel()] or {}
+			local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
 			--BAng.p = 0
 			--困扰撒蜜蜂114514年的bug-1
 			local FPos,FAng = LocalToWorld(DPos, DAng+Angle(0,0,180),BPos,owner:EyeAngles())
@@ -570,6 +579,12 @@ if SERVER then
 			--self.MeleeHit = false
 			self.MeleeHitTriggered = false
 
+			for ent,_ in pairs(self.DupeData) do
+
+				ent.NSPW_MeleeHitTriggered = false
+
+			end
+
 			return
 
 		end
@@ -620,7 +635,8 @@ if SERVER then
 
 				Hit = true
 
-				local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
+				local PropData = NSPW_DATA_PROPDATA[ent] or {}
+
 				local dmgmod = PropData.AttackDamageModify or 0
 				local random = PropData.AttackDamageModifyOffset or 0
 
@@ -650,6 +666,29 @@ if SERVER then
 				Dmginfo:SetAttacker(owner)
 				tr.Entity:TakeDamageInfo(Dmginfo)
 				self.Attacked[#self.Attacked+1] = tr.Entity
+
+				if !ent.NSPW_MeleeHitTriggered then
+
+					local tempval = PropData.MeleeHitSound
+
+					ent.NSPW_MeleeHitTriggered = true
+					
+					owner:EmitSound(
+						istable(tempval) and tempval[math.random(1,#tempval)] or
+						tempval or "")
+
+					tempval = PropData.MeleeHitEffect
+
+					if tempval then
+						local ed = EffectData()
+						ed:SetOrigin(tr.HitPos)
+						ed:SetStart(tr.HitPos)
+						ed:SetScale(1)
+						util.Effect(istable(tempval) and tempval[math.random(1,#tempval)] or tempval,ed,true,true)
+					end
+
+				end
+
 			end
 
 		end
@@ -663,7 +702,7 @@ if SERVER then
 
 	function SWEP:ThinkHandleGun(owner)
 
-		local PropData = NSPW_DATA_PROPDATA[self.DupeDataC:GetModel()] or {}
+		local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
 
 		if !self.DupeDataC.NSPW_GUNCLIP1 then
 			self.DupeDataC.NSPW_GUNCLIP1 = PropData.Magsize
@@ -678,7 +717,7 @@ if SERVER then
 		
 			if !IsValid(ent) or ent == self.DupeDataC then continue end
 
-			local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
+			local PropData = NSPW_DATA_PROPDATA[ent] or {}
 			magsize = magsize + (PropData.Magsize or 0)
 
 		end
@@ -691,8 +730,19 @@ if SERVER then
 			if self.HoldType == "shotgun" and dist > 250000  then
 				owner:SetCondition(COND.TOO_FAR_TO_ATTACK)
 				--owner:SetSchedule(SCHED_MOVE_TO_WEAPON_RANGE)
-			elseif dist <= 400 then
-				owner:SetCondition(COND.TOO_CLOSE_TO_ATTACK)
+			elseif dist <= 3600 and owner:SelectWeightedSequence(ACT_MELEE_ATTACK1) >= 0 and !owner:IsCurrentSchedule(SCHED_MELEE_ATTACK1) then
+				--[[local oldht = self.HoldType
+				if owner:SelectWeightedSequence(ACT_MELEE_ATTACK1) < 0 then
+					self.HoldType = "melee"
+					owner:SetActivity(ACT_MELEE_ATTACK_SWING)
+				end]]
+				owner:SetSchedule(SCHED_MELEE_ATTACK1)
+				timer.Simple(0.2,function()
+					if !IsValid(owner) or !IsValid(self) then return end
+					self:Swing(owner,PropData,self:GetStyleData())
+					--self.HoldType = oldht
+				end)
+				--print("1")
 				--owner:SetSchedule(SCHED_MOVE_TO_WEAPON_RANGE)
 			end
 
@@ -703,7 +753,7 @@ if SERVER then
 	function SWEP:ThinkHandleGunReload(owner)
 
 		local MyStyle = self:GetStyleData()
-		local PropData = NSPW_DATA_PROPDATA[self.DupeDataC:GetModel()]
+		local PropData = NSPW_DATA_PROPDATA[self.DupeDataC]
 
 		local Mul = 1
 
@@ -715,7 +765,7 @@ if SERVER then
 		
 			if !IsValid(ent) then continue end
 
-			local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
+			local PropData = NSPW_DATA_PROPDATA[ent] or {}
 			Mul = Mul * (PropData.ReloadSpeedMul or 1)
 			Mul = Mul + (PropData.ReloadSpeedMulOffset or 0)
 
@@ -764,7 +814,7 @@ if SERVER then
 
 					if !IsValid(ent) or ent == self.DupeDataC then continue end
 
-					local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
+					local PropData = NSPW_DATA_PROPDATA[ent] or {}
 					magsize = magsize + (PropData.Magsize or 0)
 
 				end
@@ -865,7 +915,7 @@ if SERVER then
 			
 					if !IsValid(ent) then continue end
 
-					local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
+					local PropData = NSPW_DATA_PROPDATA[ent] or {}
 					local TargetVal = PropData.ReloadEvent_Start
 
 					if TargetVal then
@@ -891,7 +941,7 @@ if SERVER then
 			
 						if !IsValid(ent) then continue end
 
-						local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
+						local PropData = NSPW_DATA_PROPDATA[ent] or {}
 						local TargetVal = PropData.ReloadEvent_ClipOut
 
 						if TargetVal then
@@ -915,7 +965,7 @@ if SERVER then
 			
 						if !IsValid(ent) then continue end
 
-						local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
+						local PropData = NSPW_DATA_PROPDATA[ent] or {}
 						local TargetVal = PropData.ReloadEvent_ChangeClip
 
 						if TargetVal then
@@ -931,7 +981,7 @@ if SERVER then
 
 					end
 
-					self.ReloadAmmoTime = CurTime()+0.7*Mul*(MyStyle.ReloadTime or 1)/3 
+					self.ReloadAmmoTime = CurTime()+(MyStyle.DoubleHand and 0.7 or 0.35)*Mul*(MyStyle.ReloadTime or 1)/3 
 					self.ReloadStage = 2
 
 				elseif self.ReloadStage == 2 then
@@ -940,7 +990,7 @@ if SERVER then
 			
 						if !IsValid(ent) then continue end
 
-						local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
+						local PropData = NSPW_DATA_PROPDATA[ent] or {}
 						local TargetVal = PropData.ReloadEvent_ClipIn
 
 						if TargetVal then
@@ -965,7 +1015,7 @@ if SERVER then
 			
 						if !IsValid(ent) then continue end
 
-						local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
+						local PropData = NSPW_DATA_PROPDATA[ent] or {}
 						local TargetVal = PropData.ReloadEvent_LoadGun
 
 						if TargetVal then
@@ -981,7 +1031,7 @@ if SERVER then
 
 					end
 
-					self.ReloadAmmoTime = CurTime()+0.5*Mul*(MyStyle.ReloadTime or 1)/3 
+					self.ReloadAmmoTime = CurTime()+(MyStyle.DoubleHand and 0.5 or 0.7)*Mul*(MyStyle.ReloadTime or 1)/3 
 					self.ReloadStage = 4
 
 					self.NeedPump = false
@@ -993,7 +1043,7 @@ if SERVER then
 
 						if !IsValid(ent) or ent == self.DupeDataC then continue end
 
-						local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
+						local PropData = NSPW_DATA_PROPDATA[ent] or {}
 						magsize = magsize + (PropData.Magsize or 0)
 
 						local TargetVal = PropData.ReloadEvent_End
@@ -1037,25 +1087,32 @@ if SERVER then
 
 		if self.NextReload > CurTime() then return end
 
+		self:SetAiming(false)
+
 		local MyStyle = self:GetStyleData()
 
-		local PropData = NSPW_DATA_PROPDATA[self.DupeDataC:GetModel()] or {}
+		local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
 
 		if !owner:KeyDown(IN_USE) and !self:GetBlocking() and MyStyle.IsGun and PropData.IsGun and self:Clip1() < self:GetMaxClip1() and !self.InReload then
 
 			--print("SEND")
+			if !PropData.FreeReload and tobool(MyStyle.DoubleHand) != tobool(PropData.DoubleHand) then
+				owner:PrintMessage(4,SomeSBStuffs) --翻译...
+				--return
+			else
+				owner:DoReloadEvent()
+				self:CallOnClient("DoReloadEvent")
+	
+				--self:SendWeaponAnim(ACT_VM_IDLE)
+				self:SendVMAnim(ACT_VM_RELOAD)
+				--self:SendVMAnim(ACT_VM_PRIMARYATTACK_3)
+				--self:SetBlocking(true)
+	
+				self.ReloadStartTime = CurTime()
+				self.ReloadSetup = false
+				self.InReload = true
+			end
 
-			owner:DoReloadEvent()
-			self:CallOnClient("DoReloadEvent")
-
-			--self:SendWeaponAnim(ACT_VM_IDLE)
-			self:SendVMAnim(ACT_VM_RELOAD)
-			--self:SendVMAnim(ACT_VM_PRIMARYATTACK_3)
-			--self:SetBlocking(true)
-
-			self.ReloadStartTime = CurTime()
-			self.ReloadSetup = false
-			self.InReload = true
 
 		end
 
@@ -1067,6 +1124,53 @@ if SERVER then
 		--owner:PrintMessage(4, "JB")
 
 	end
+
+	function SWEP:Swing(owner,PropData,MyStyle)
+
+		--local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
+		local time = 0.1
+
+		if owner:IsPlayer() then owner:DoAttackEvent() end
+		self:CallOnClient("DoAttackEvent")
+
+		timer.Simple(MyStyle.AttackVM,function()
+			if !IsValid(self) then return end
+			self:SendWeaponAnim(ACT_VM_MISSCENTER)
+		end)
+
+		owner:EmitSound("weapons/slam/throw.wav",75,math.random(90,140))
+
+		for ent,_ in pairs(self.DupeData) do
+
+			if !IsValid(ent) then continue end
+
+			local PropData = NSPW_DATA_PROPDATA[ent] or {}
+
+			time = time + (PropData.AttackTimeModify or 0)
+
+			local pobj = ent:GetPhysicsObject()
+			local CV = GetConVar(ent == self.DupeDataC and "savee_nspw_delay_massmul" or "savee_nspw_delay_massmulchildren")
+			if IsValid(pobj) then 
+				time = time + pobj:GetMass()*CV:GetFloat()
+			else
+				time = time + GetConVar("savee_nspw_mass_nonphysics"):GetFloat()*CV:GetFloat()
+			end
+
+				--time = time*GetConVar("savee_nspw_damage_mult"):GetFloat()
+			--print(time)
+
+		end
+
+
+		self.MeleeAttackStart = CurTime()+MyStyle.AttackStart
+		self.MeleeAttackEnd = CurTime()+MyStyle.AttackEnd
+
+		self.MeleeAttacking = true
+		self:SetNextPrimaryFire(CurTime()+math.max(0.3,time))
+
+
+	end	
+
 else
 
 	local NSPW_SettingMenu
@@ -1186,16 +1290,43 @@ function SWEP:Think()
 
 		local MyStyle = self:GetStyleData()
 
-		local PropData = NSPW_DATA_PROPDATA[self.DupeDataC:GetModel()] or {}
+		local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
+
+		local Total = 0
+		for ent,_ in pairs(self.DupeData or {}) do
+
+			if !IsValid(ent) then continue end
+
+			local PropData = NSPW_DATA_PROPDATA[ent] or {}
+			if PropData.Automatic != nil then
+
+				if PropData.Automatic then
+					Total = Total + 1
+				else
+					Total = Total - 1
+				end
+
+			end
+			
+		end
+
+		if Total == 0 and PropData.Automatic or Total > 0 then
+			Total = true
+		else
+			Total = false
+		end
 
 		self:ThinkHandlePropPosition(owner)
 		if MyStyle.IsGun and PropData.IsGun then
-			self.Primary.Automatic = PropData.Automatic or false
+			self.Primary.Automatic = Total
 			self.Primary.Ammo = PropData.AmmoType or "pistol"
 			self.Secondary.Ammo = "none"
 			self:ThinkHandleGun(owner)
 			if self.InReload then
 				self:ThinkHandleGunReload(owner)
+			end
+			if owner:IsNPC() and owner:IsCurrentSchedule(SCHED_MELEE_ATTACK1) then
+				self:ThinkHandleAttack(owner)
 			end
 			--print("?")
 		else
@@ -1214,7 +1345,7 @@ function SWEP:Think()
 				if !owner:IsCurrentSchedule(SCHED_MELEE_ATTACK1) and !owner:IsCurrentSchedule(SCHED_CHASE_ENEMY) then
 
 					local dist = owner:GetPos():DistToSqr(owner:GetEnemy():GetPos())
-					if dist <= 1600  then
+					if dist <= 4000  then
 						owner:SetSchedule(SCHED_MELEE_ATTACK1)
 						--owner:SetActivity(ACT_MELEE_ATTACK1)
 						timer.Simple(0.2,function()
@@ -1222,7 +1353,7 @@ function SWEP:Think()
 							self:PrimaryAttack()
 						end)
 						--print("KTE")
-					elseif dist > 1600 and owner:GetCurrentSchedule() != SCHED_CHASE_ENEMY then
+					elseif dist > 4000 and owner:GetCurrentSchedule() != SCHED_CHASE_ENEMY then
 						owner:SetSchedule(SCHED_CHASE_ENEMY)
 						--print("EXE",dist)
 					end
@@ -1257,7 +1388,7 @@ function SWEP:Think()
 
 		local MyStyle = self:GetStyleData()
 
-		local PropData = NSPW_DATA_PROPDATA[self.DupeDataC:GetModel()] or {}
+		local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
 		--print(self.DupeDataC:GetModel())
 
 		--self:ThinkHandlePropPosition(owner)
@@ -1395,7 +1526,8 @@ function SWEP:DropMySelf()
 end
 
 local Reload = {
-	["anim_reload"] = {0.1,0.7},
+	["anim_reload"] = {0.3,0.85},
+	["anim_bolt"] = {0.1,0.8},
 	["anim_reloadaug"] = {0.1,0.7},
 	["anim_reloadsg"] = true,
 	["anim_reloadsgloop"] = true,
@@ -1407,6 +1539,8 @@ function SWEP:PreDrawViewModel(vm)
 
 	local ht = self:GetHoldType()
 	local MyStyle = Style[ht] or {}
+	local PropData = NSPW_DATA_PROPDATA[self.DupeDataC]
+
 	if !MyStyle.HolsterPrevVM then
 		vm:SetModel(MyStyle.VM or "")
 		self.CurViewModel = vm:GetModel()
@@ -1496,11 +1630,14 @@ function SWEP:PreDrawViewModel(vm)
 			
 			if !IsValid(ent) then continue end
 
-			local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
+			local PropData = NSPW_DATA_PROPDATA[ent] or {}
 			
-			if !PropData.BoneManipulatesAnimation and !PropData.BoneManipulates then continue end
+			local BMA = MyStyle.DoubleHand and PropData.BoneManipulatesAnimation or PropData.BoneManipulatesAnimationPistol
+			local BM = MyStyle.DoubleHand and PropData.BoneManipulates or PropData.BoneManipulatesPistol
 
-			for i,data in pairs(PropData.BoneManipulates or {}) do
+			if !BMA and !BM then continue end
+
+			for i,data in pairs(BM or {}) do
 
 				local bi = isnumber(i) and i or vm:LookupBone(i) 
 
@@ -1512,7 +1649,7 @@ function SWEP:PreDrawViewModel(vm)
 
 			end
 
-			for i,data in pairs(PropData.BoneManipulatesAnimation or {}) do
+			for i,data in pairs(BMA or {}) do
 
 				local bi = isnumber(i) and i or vm:LookupBone(i) 
 
@@ -1525,6 +1662,42 @@ function SWEP:PreDrawViewModel(vm)
 			end
 
 		end
+
+		local Mul = FrameTime() * 3
+
+		if self:GetAiming() then
+
+			self.LastAim = (self.LastAim or 0) + Mul
+			self.LastAimRaw = (self.LastAimRaw or 0) + Mul
+			self.SwayScale = 0.15
+			self.BobScale = 0.1
+
+		else
+
+			self.LastAim = (self.LastAim or 0) - Mul
+			self.LastAimRaw = self.LastAim
+			self.SwayScale = 1
+			self.BobScale = 1
+
+		end
+
+		--猫娘在发情期憋太久了会憋坏(SMJB)
+		--其实我想表述的是LerpVector和LerpAngle不像Lerp那样有限制
+
+		self.LastAim = math.min(1,math.max(self.LastAim,0))
+
+		vm:ManipulateBonePosition(0,self:GetManipulateBonePosition(0) + LerpVector(
+			self.LastAim,
+			Vector(0,0,0),
+			Vector(-5,6.8,4.7)+(PropData.AimOffsetPos or Vector())+(PropData.AimUseScope and self.LastAim >= 0.8 and Vector(-1000,-1000,-1000) or Vector())
+			)
+		)
+		vm:ManipulateBoneAngles(0,self:GetManipulateBoneAngles(0) + LerpAngle(
+			self.LastAim,
+			Angle(0,0,0),
+			Angle(-2,0,(MyStyle.DoubleHand and -1 or -0.2))+(PropData.AimOffsetAng or Angle())
+			)
+		)
 	end
 
 	Manipulate(vm)
@@ -1558,7 +1731,7 @@ function SWEP:PreDrawViewModel(vm)
 			
 				if !IsValid(ent) then continue end
 
-				local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
+				local PropData = NSPW_DATA_PROPDATA[ent] or {}
 				Mul = Mul * (PropData.ReloadSpeedMul or 1)
 				Mul = Mul + (PropData.ReloadSpeedMulOffset or 0)
 
@@ -1586,7 +1759,7 @@ function SWEP:PreDrawViewModel(vm)
 			
 				if !IsValid(ent) then continue end
 
-				local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
+				local PropData = NSPW_DATA_PROPDATA[ent] or {}
 				Mul = Mul * (PropData.ReloadSpeedMul or 1)
 				Mul = Mul + (PropData.ReloadSpeedMulOffset or 0)
 
@@ -1747,6 +1920,7 @@ function SWEP:PostDrawViewModel(draw)
 
 		
 		--ent:SetNetworkOrigin(FPos)
+		--ent:SetRender
 		ent:SetRenderOrigin(FPos)
 		ent:SetRenderAngles(FAng)
 		ent.RenderOverride = function(self) 
@@ -1782,7 +1956,8 @@ function SWEP:PostDrawViewModel(draw)
 		--ent:SetAngles(FAng)
 		--ent.NSPW_PROP_CL_OFFSETPOS = ent:GetPos()
 		--ent:SetupBones()
-
+		local c = ent:GetColor()
+		render.SetColorModulation(c.r/255,c.g/255,c.b/255)
 		if isfunction(ent.Draw) then
 			
 			--local BPos,BAng = ent:GetPos(),ent:GetAngles()
@@ -1823,6 +1998,19 @@ function SWEP:PostDrawViewModel(draw)
 	end
 
 end
+
+function SWEP:AdjustMouseSensitivity()
+
+	local PropData = NSPW_DATA_PROPDATA[self.DupeDataC]
+
+	if self:GetAiming() then
+		return 0.7 * (PropData.AimMouseSensMul or 1)
+	end
+
+	return 1
+
+end
+
 
 function SWEP:RequestPropInfo()
 
@@ -1871,7 +2059,7 @@ function SWEP:DrawWorldModel()
 
 	--别问,问就是尊重实例
 
-	--[[local PropData = NSPW_DATA_PROPDATA[self.DupeDataC:GetModel()] or {}
+	--[[local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
 
 	render.SetColorMaterial()
 
@@ -1982,6 +2170,7 @@ function SWEP:Holster()
 	if SERVER then
 
 		self.InReload = false
+		self:SetAiming(false)
 
 		for ent,data in pairs(self.DupeData or {}) do
 
@@ -2029,7 +2218,41 @@ function SWEP:Holster()
 
 end
 
+function SWEP:TranslateFOV(fov)
+
+	local PropData = NSPW_DATA_PROPDATA[self.DupeDataC]
+
+	if self:GetAiming() or (self.LastAim or 0) > 0 then
+
+		return Lerp((PropData.AimUseScope and (self.LastAimRaw or 0)*2 - 1.3 or self.LastAim or 0),fov,(fov - 15) * (PropData.AimFovMul or 1))
+
+	end
+
+	return fov
+
+end
+
+--vgui/scope_shadowmask
+
+--我不是ZS作者所以我不会绘制超酷材质,当然你想让我用结合人的那个也不是不行
+local ScopeMat = Material("vgui/scope_shadowmask_test")
+
+function SWEP:DrawHUD()
+
+	local PropData = NSPW_DATA_PROPDATA[self.DupeDataC]
+
+	if PropData.AimUseScope and self.LastAim > 0.8 then
+		surface.SetDrawColor(255,255,255,255)
+		surface.SetMaterial(ScopeMat)
+		surface.DrawTexturedRect(0,(ScrH()-ScrW())/2,ScrW(),ScrW())
+		surface.SetDrawColor(0,0,0,Lerp(((self.LastAimRaw or 0)-1),255,0))
+		surface.DrawRect(0,0,ScrW(),ScrH())
+	end
+
+end
+
 --NSPW 主要功能
+
 
 function SWEP:CanSecondaryAttack()
 
@@ -2049,6 +2272,7 @@ function SWEP:SecondaryAttack()
 	if SERVER then
 
 		local MyStyle = self:GetStyleData()
+		local PropData = NSPW_DATA_PROPDATA[self.DupeDataC]
 			--print(!MyStyle.IsGun and !MyStyle.AlwaysBlock and !MyStyle.DoNothing)
 
 		if owner:KeyDown(IN_USE) then
@@ -2062,6 +2286,10 @@ function SWEP:SecondaryAttack()
 			if oldBlock then
 				self:SetNextPrimaryFire(CurTime()+0.5)
 			end
+		elseif MyStyle.IsGun and !self.InReload and !PropData.NoAim then
+
+			self:SetAiming(!self:GetAiming())
+
 		end
 		self:SetNextSecondaryFire(CurTime()+0.1)
 	end
@@ -2133,7 +2361,7 @@ function SWEP:PrimaryAttack()
 			end
 
 
-			local PropData = NSPW_DATA_PROPDATA[self.DupeDataC:GetModel()] or {}
+			local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
 
 			if MyStyle.IsGun and PropData.IsGun then
 				
@@ -2146,7 +2374,7 @@ function SWEP:PrimaryAttack()
 
 					if !IsValid(ent) then continue end
 
-					local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
+					local PropData = NSPW_DATA_PROPDATA[ent] or {}
 					if PropData.ForceHeavyWeapon then
 						Heavy = true
 					end
@@ -2169,6 +2397,11 @@ function SWEP:PrimaryAttack()
 				end
 
 				if (PropData.PumpAction or PropData.BoltAction) and self.NeedPump then
+					
+					if !PropData.FreeReload and tobool(MyStyle.DoubleHand) != tobool(PropData.DoubleHand) then
+						owner:PrintMessage(4,SomeSBStuffs)
+						return
+					end
 					self:SendVMAnim(PropData.BoltAction and ACT_VM_PRIMARYATTACK_3 or Heavy and ACT_VM_PRIMARYATTACK_DEPLOYED_1 or ACT_VM_PRIMARYATTACK_DEPLOYED)
 					if !Heavy and !PropData.BoltAction then owner:EmitSound(PropData.PumpSound or "weapons/m3/m3_pump.wav",55) end
 					timer.Simple(0.2, function()
@@ -2193,9 +2426,9 @@ function SWEP:PrimaryAttack()
 				--end)
 				--self:SendWeaponAnim(ACT_VM_PRIMARYATTACK_1)
 
-				self:SendVMAnim(Heavy and ACT_VM_PRIMARYATTACK_2 or PropData.PumpAction and ACT_VM_PRIMARYATTACK_1 or MyStyle.AttackActivity)
+				self:SendVMAnim(Heavy and ACT_VM_PRIMARYATTACK_2 or (MyStyle.DoubleHand and PropData.PumpAction) and ACT_VM_PRIMARYATTACK_1 or MyStyle.AttackActivity)
 
-				if Heavy and PropData.PumpAction or PropData.BoltAction then
+				if (Heavy or !MyStyle.DoubleHand) and PropData.PumpAction or PropData.BoltAction then
 
 					self.NeedPump = true
 				elseif PropData.PumpAction then
@@ -2209,8 +2442,8 @@ function SWEP:PrimaryAttack()
 
 				self:SetClip1(self:Clip1()-AmmoToTake)
 
-
-				owner:EmitSound(PropData.ShootSound or "weapons/pistol/pistol_fire2.wav",75)
+				local snd = PropData.ShootSound
+				owner:EmitSound(istable(snd) and snd[math.random(1,snd)] or snd or "weapons/pistol/pistol_fire2.wav",75)
 
 				local dmgmod = PropData.BulletDamage or 0
 				local random = PropData.BulletDamageOffset or 0
@@ -2247,11 +2480,13 @@ function SWEP:PrimaryAttack()
 
 				local Trace,MF,HitEffect = {},{},{}
 
+				local BC = (PropData.BulletCount or 1)
+
 				for ent,_ in pairs(self.DupeData) do 
 		
 					if !IsValid(ent) then continue end
 
-					local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
+					local PropData = NSPW_DATA_PROPDATA[ent] or {}
 
 					if PropData.BulletTrace then
 						Trace[#Trace+1] = PropData.BulletTrace
@@ -2264,6 +2499,9 @@ function SWEP:PrimaryAttack()
 					end
 
 					if ent == self.DupeDataC then continue end
+
+					BC = BC + (PropData.BulletCount or 0)
+
 					time = time + (PropData.NextFireTime or 0)
 					MPos = MPos + (PropData.MuzzlePos or Vector(0,0,0))
 
@@ -2283,9 +2521,8 @@ function SWEP:PrimaryAttack()
 					Spread = Spread + (PropData.BulletSpread or Angle())
 
 				end
-				Trace = Trace[math.random(1,#Trace)]
-				MF = MF[math.random(1,#MF)]
-				HitEffect = HitEffect[math.random(1,#HitEffect)]
+				--print(math.random(1,#Trace),#Trace)
+				BC = math.max(1,BC)
 				
 
 				RecoilH = -math.Rand(RecoilH-OffsetH,RecoilH+OffsetH)
@@ -2310,8 +2547,12 @@ function SWEP:PrimaryAttack()
 
 				--local HPos = owner:IsPlayer() and owner:GetEyeTrace().HitPos or util.QuickTrace(owner:EyePos(),owner:GetAimVector(),owner).HitPos
 
-				for i=1,PropData.BulletCount or 1 do
+				for i=1,BC do
 					--local AimVec = (HPos-MPos):GetNormalized()
+					local Trace = {Trace[math.random(1,#Trace)]}
+					local MF = {MF[math.random(1,#MF)]}
+					local HitEffect = {HitEffect[math.random(1,#HitEffect)]}
+					
 					local AimVec = owner:GetAimVector()
 					if Spread != Angle(0,0,0) then
 
@@ -2401,16 +2642,16 @@ function SWEP:PrimaryAttack()
 
 							if !IsValid(ent) then continue end
 
-							local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
+							local PropData = NSPW_DATA_PROPDATA[ent] or {}
 
 							if isfunction(PropData.BulletCallback) then
 								--print("?")
 								PropData.BulletCallback(self,owner,tr,Dmginfo,function(v)
-									Trace = v
+									Trace[#Trace + 1] = v
 								end,function(v)
-									MF = v
+									MF[#MF + 1] = v
 								end,function(v)
-									HitEffect = v
+									HitEffect[#HitEffect + 1] = v
 								end)
 							end
 
@@ -2420,6 +2661,11 @@ function SWEP:PrimaryAttack()
 
 					--print(AimVec)
 
+					Trace = Trace[math.random(1,#Trace)]
+					MF = MF[math.random(1,#MF)]
+					HitEffect = HitEffect[math.random(1,#HitEffect)]
+
+					--虽然util.Effect可以同步到客户端(多人),但是我们要求精细化(神他妈方格弹孔)
 					if !game.SinglePlayer() then
 						--Trace数据不重要,它就是一特效
 						net.Start("NSPW_TransTraceMessage",true)
@@ -2473,49 +2719,18 @@ function SWEP:PrimaryAttack()
 
 				end
 
-				self:SetNextPrimaryFire(CurTime()+math.max(0.02,time))
-			elseif !MyStyle.IsGun then
+				if self:GetAiming() then
 
-				if owner:IsPlayer() then owner:DoAttackEvent() end
-				self:CallOnClient("DoAttackEvent")
-
-				timer.Simple(MyStyle.AttackVM,function()
-					if !IsValid(self) then return end
-					self:SendWeaponAnim(ACT_VM_MISSCENTER)
-				end)
-
-				owner:EmitSound("weapons/slam/throw.wav",75,math.random(90,140))
-
-				for ent,_ in pairs(self.DupeData) do
-
-					if !IsValid(ent) then continue end
-
-					local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
-
-					time = time + (PropData.AttackTimeModify or 0)
-
-					local pobj = ent:GetPhysicsObject()
-					local CV = GetConVar(ent == self.DupeDataC and "savee_nspw_delay_massmul" or "savee_nspw_delay_massmulchildren")
-					if IsValid(pobj) then 
-						time = time + pobj:GetMass()*CV:GetFloat()
-					else
-						time = time + GetConVar("savee_nspw_mass_nonphysics"):GetFloat()*CV:GetFloat()
-					end
-
-						--time = time*GetConVar("savee_nspw_damage_mult"):GetFloat()
-					--print(time)
+					time = time + 0.03
 
 				end
 
+				self:SetNextPrimaryFire(CurTime()+math.max(0.02,time))
+			elseif !MyStyle.IsGun then
 
-				self.MeleeAttackStart = CurTime()+MyStyle.AttackStart
-				self.MeleeAttackEnd = CurTime()+MyStyle.AttackEnd
-
-				self.MeleeAttacking = true
-				self:SetNextPrimaryFire(CurTime()+math.max(0.3,time))
+				self:Swing(owner,PropData,MyStyle)
 
 			end
-
 
 		end
 
@@ -2550,7 +2765,7 @@ function SWEP:GetNPCBurstSettings()
 	--local time = 0.1
 
 
-	local PropData = NSPW_DATA_PROPDATA[self.DupeDataC:GetModel()] or {}
+	local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
 
 	if MyStyle.IsGun and PropData.IsGun then
 
@@ -2562,7 +2777,7 @@ function SWEP:GetNPCBurstSettings()
 
 			if !IsValid(ent) then continue end
 
-			local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
+			local PropData = NSPW_DATA_PROPDATA[ent] or {}
 			if PropData.ForceHeavyWeapon then
 				Heavy = true
 			end
@@ -2620,7 +2835,7 @@ function SWEP:GetNPCBulletSpread(pro)
 	--local time = 0.1
 
 
-	local PropData = NSPW_DATA_PROPDATA[self.DupeDataC:GetModel()] or {}
+	local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
 
 	if MyStyle.IsGun and PropData.IsGun then
 
@@ -2633,7 +2848,7 @@ function SWEP:GetNPCBulletSpread(pro)
 
 			if !IsValid(ent) then continue end
 
-			local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
+			local PropData = NSPW_DATA_PROPDATA[ent] or {}
 			if PropData.ForceHeavyWeapon then
 				Heavy = true
 			end
@@ -2664,7 +2879,7 @@ function SWEP:GetNPCBulletSpread(pro)
 
 		--Spread = (Spread.y+Spread.r)/2
 
-		return 5/pro*(Heavy and 2 or 1)
+		return math.max(4*(Heavy and 1.6 or 1)-pro,0.05)
 
 
 			
@@ -2687,7 +2902,7 @@ function SWEP:GetNPCRestTimes()
 	local time = 0.1
 
 
-	local PropData = NSPW_DATA_PROPDATA[self.DupeDataC:GetModel()] or {}
+	local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
 
 	if MyStyle.IsGun and PropData.IsGun then
 
@@ -2697,7 +2912,7 @@ function SWEP:GetNPCRestTimes()
 
 			if !IsValid(ent) then continue end
 
-			local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
+			local PropData = NSPW_DATA_PROPDATA[ent] or {}
 			time = time + (PropData.NextFireTime or 0)
 
 
@@ -2716,18 +2931,21 @@ function SWEP:GetNPCRestTimes()
 
 end
 
+
 SWEP.ActivityTranslateAINSPW = {
 	["melee"] = {
 		--[1] = ACT_IDLE_MELEE,
-		[ACT_IDLE] = ACT_IDLE_MELEE,
-		[ACT_IDLE_AGITATED] = ACT_IDLE_MELEE,
-		[ACT_IDLE_AIM_AGITATED] = ACT_IDLE_MELEE,
-		[ACT_IDLE_AIM_RELAXED] = ACT_IDLE_MELEE,
-		[ACT_IDLE_RELAXED] = ACT_IDLE_MELEE,
+		[ACT_IDLE] = ACT_IDLE_ANGRY_MELEE,
+		[ACT_IDLE_ANGRY] = ACT_IDLE_ANGRY_MELEE,
+		[ACT_IDLE_AGITATED] = ACT_IDLE_ANGRY_MELEE,
+		[ACT_IDLE_AIM_AGITATED] = ACT_IDLE_ANGRY_MELEE,
+		[ACT_IDLE_AIM_RELAXED] = ACT_IDLE_ANGRY_MELEE,
+		[ACT_IDLE_RELAXED] = ACT_IDLE_ANGRY_MELEE,
 		[ACT_RUN] = ACT_RUN,
 		[ACT_WALK] = ACT_WALK,
 		[ACT_RUN_AIM] = ACT_RUN,
 		[ACT_WALK_AIM] = ACT_WALK,
+		[ACT_WALK_ANGRY] = ACT_WALK,
 		--[ACT_RANGE_ATTACK1] = ACT_MELEE_ATTACK1,
 		--[ACT_RANGE_ATTACK1_LOW] = ACT_MELEE_ATTACK1,
 		[ACT_MELEE_ATTACK1] = ACT_MELEE_ATTACK_SWING,
@@ -2736,6 +2954,11 @@ SWEP.ActivityTranslateAINSPW = {
 	["shotgun"] = {
 		[ACT_CROUCHIDLE_AIM_STIMULATED] = ACT_RANGE_AIM_AR2_LOW,
 		[ACT_CROUCHIDLE_AGITATED] = ACT_RANGE_AIM_AR2_LOW,
+		[ACT_CROUCHIDLE_STIMULATED] = ACT_CROUCHIDLE_STIMULATED,
+	},
+	["pistol"] = {
+		[ACT_CROUCHIDLE_AIM_STIMULATED] = ACT_RANGE_AIM_PISTOL_LOW,
+		[ACT_CROUCHIDLE_AGITATED] = ACT_RANGE_AIM_PISTOL_LOW,
 		[ACT_CROUCHIDLE_STIMULATED] = ACT_CROUCHIDLE_STIMULATED,
 	}
 }
@@ -2747,6 +2970,7 @@ function SWEP:TranslateActivity( act )
 		--print(self.ActivityTranslateAINSPW[ht] and self.ActivityTranslateAINSPW[ht][act])
 		self:SetupWeaponHoldTypeForAI(self.HoldType)
 		if self.ActivityTranslateAINSPW[ht] and self.ActivityTranslateAINSPW[ht][act] then
+			--print(act)
 			return self.ActivityTranslateAINSPW[ht][act]
 		elseif self.ActivityTranslateAI[act] then
 			return self.ActivityTranslateAI[act]
@@ -2766,7 +2990,10 @@ function SWEP:GetCapabilities()
 		--print("?")
 		return CAP_WEAPON_MELEE_ATTACK1 
 	end
-	return bit.bor(CAP_WEAPON_MELEE_ATTACK1,CAP_WEAPON_RANGE_ATTACK1,CAP_INNATE_RANGE_ATTACK1)
+	return bit.bor(
+		CAP_WEAPON_MELEE_ATTACK1,
+		CAP_WEAPON_RANGE_ATTACK1,
+		CAP_INNATE_RANGE_ATTACK1)
 end
 --SWEP.OwnerChanged = SWEP.OnRemove
 
