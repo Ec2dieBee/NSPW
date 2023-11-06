@@ -36,8 +36,8 @@ local Style = {
 		Desc = "Hold your weapon in your right hand \n Classic!",
 		Goods = "Classic",
 		Bads = "Classic...",
-		AttackStart = 0.05,
-		AttackEnd = 0.15,
+		AttackStart = 0.1,
+		AttackEnd = 0.25,
 		AttackVM = 0,
 		VM = "models/weapons/c_nspw_melee.mdl",
 	},
@@ -47,8 +47,8 @@ local Style = {
 		Goods = "Less swing cooldown time",
 		Bads = "Shorter attack distance \n (Still one-handed in viewmodel)",
 		SwingTimeMod = 0.3,
-		AttackStart = 0.1,
-		AttackEnd = 0.35,
+		AttackStart = 0.15,
+		AttackEnd = 0.4,
 		AttackVM = 0,
 		VM = "models/weapons/c_nspw_melee2.mdl",
 	},
@@ -2564,6 +2564,9 @@ function SWEP:PrimaryAttack()
 					local HitEffect = {HitEffect[math.random(1,#HitEffect)]}
 					
 					local AimVec = owner:GetAimVector()
+					if self.MarkedAsLambdaWep and IsValid(self.nspw_LambdaTarget)then
+						AimVec = (self.nspw_LambdaTarget:WorldSpaceCenter() - owner:EyePos()):GetNormalized()
+					end
 					if Spread != Angle(0,0,0) then
 
 						local bs = Spread
