@@ -2,7 +2,7 @@
 Cool update of SPW
 [Read Code Plz,idk why the preview messed up]
 # How do I use it?
-Aim a prop,then type "savee_nspw_debug_pickup" in game console to pickup a prop(or dupe)
+Aim to a prop,then type "savee_nspw_debug_pickup" in game console to pickup a prop(or dupe)
 that's it
 # Convars?
 Too many convars,I'm too lazy to explain them,just type savee_nspw_ in game console
