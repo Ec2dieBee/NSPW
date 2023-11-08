@@ -327,6 +327,10 @@ local function GenLambdaWep(val,data)
 
 			OnDeploy = function(own,wep)
 
+				if !NSPW_WEAPON then
+					NSPW_WEAPON = weapons.Get("nspw_melee")
+				end
+
 				--print(val)
 
 				if !IsValid(wep.DupeDataC) then
@@ -466,6 +470,9 @@ local function LoadWeapons()
 
 				OnDeploy = function(own,wep)
 
+					if !NSPW_WEAPON then
+						NSPW_WEAPON = weapons.Get("nspw_melee")
+					end
 
 					if !IsValid(wep.DupeDataC) then
 
