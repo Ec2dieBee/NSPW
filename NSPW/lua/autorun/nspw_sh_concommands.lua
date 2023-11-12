@@ -24,3 +24,8 @@ CreateConVar("savee_nspw_block_weapondrop_massprovidepermass",7,{FCVAR_ARCHIVE,F
 CreateConVar("savee_nspw_delay_massmul",0.05,{FCVAR_ARCHIVE,FCVAR_PROTECTED,FCVAR_REPLICATED})
 CreateConVar("savee_nspw_delay_massmulchildren",0.02,{FCVAR_ARCHIVE,FCVAR_PROTECTED,FCVAR_REPLICATED})
 CreateConVar("savee_nspw_mass_nonphysics",0,{FCVAR_ARCHIVE,FCVAR_PROTECTED,FCVAR_REPLICATED})
+
+CreateConVar("savee_nspw_gun_aim_enabled",1,{FCVAR_ARCHIVE,FCVAR_PROTECTED,FCVAR_REPLICATED})
+CreateConVar("savee_nspw_gun_aim_spreadreducemul",1,{FCVAR_ARCHIVE,FCVAR_PROTECTED,FCVAR_REPLICATED})
+CreateConVar("savee_nspw_gun_aim_recoilreducemul",1,{FCVAR_ARCHIVE,FCVAR_PROTECTED,FCVAR_REPLICATED})
+CreateConVar("savee_nspw_gun_childrenmassmul",0.8,{FCVAR_ARCHIVE,FCVAR_PROTECTED,FCVAR_REPLICATED})

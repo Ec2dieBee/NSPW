@@ -8,6 +8,7 @@ AddCSLuaFile()
 	对于枪械武器,&标记它可被应用到Attachment(其实就是其它Prop)上
 
 	(难蚌,枪械设置多于近战武器)
+	(待办事项: 更加细分的细分模拟器的细分,Ctrl+B是倒角所以不)
 
 	["武器模型路径"] = {
 
@@ -33,7 +34,22 @@ AddCSLuaFile()
 
 		--枪械
 
+		-->核心+其它
+
 		IsGun = true, --标记为枪械(在枪械HoldType下可射出子弹)
+		DoubleHand = true, --双手武器(单手使用有惩罚,这玩意拿去标记步枪,霰弹枪等武器)
+		Automatic = true, --是否为自动武器&(哪种类型的修改最多就有哪种,e.g: 有5个强制全自动配件,5个强制半自动配件,那么看武器本体是否为全自动(这个当然也会加进去),反正就是比大小)
+		NextFireTime = 0.1, --下次射击的时间(Attachment: 下次射击时间的偏移)
+
+		(二选一)
+		PumpAction = true, --泵动霰弹枪
+		BoltAction = true, --栓动武器(实际上栓在左手边因为CSS)
+
+		MuzzlePos = Vector(5,0,2), --枪口位置(干预特效)
+		ForceHeavyWeapon = true, --大口径子弹模拟器
+
+		-->子弹
+
 		BulletDamageType = DMG_BULLET, --子弹伤害类型
 		BulletCount = 1, --子弹数量
 		BulletDamage = 7, --子弹伤害
@@ -51,10 +67,33 @@ AddCSLuaFile()
 		end,
 		BulletSpread = Angle(0,1,1), --第一个值没用&
 		BulletSpreadMul = 1, --Attachment Only , 扩散乘数&
+
+		-->换弹
+
 		FreeReload = false, --允许在手枪/步枪双Style下换弹(否则只能在对应Style下换弹,因为我没做)(适用于SMG1,TMP,MAC5等弹夹插在握把上的武器)
-		ReloadSpeedMul = 1, --换弹时间长短乘数(这是个错误,它本来该是速度乘数的)
+		ReloadSpeedMul = 1, --换弹速度乘数(越大越快)
 		ReloadSpeedAffectMul = 1, --换弹速度干预乘数(Attachment)&
 		ReloadSpeedMulOffset = 0 --换弹速度乘数偏移(Attachment)&
+
+		-->瞄准
+
+		NoAim = false, --禁用瞄准(可能会被移除)&
+		AimOffsetPos = Vector(), --瞄准位置偏移
+		AimOffsetAng = Angle(), --瞄准角度偏移
+		AimUseScope = false, --使用瞄准镜瞄准(狙击枪)&
+		AimMouseSensMul = 1, --瞄准时鼠标灵敏度乘数(只要你瞄准你灵敏度就会低)&
+		AimFovMul = 1, --瞄准时FOV乘数(瞄准时有降低,越低FOV越小(适用于瞄准镜))&
+		AimSpreadMul = 0.85, --瞄准时的扩散乘数(建议不为0)&
+		AimRecoilMul = 0.85, --瞄准时的后座乘数(建议不为0)&
+		ScopeType = 0, --0: 不绘制,1: 一个点,2: 十字准星(适用于狙击镜),3: 十字+点
+		ScopeDotColor = Color(185,0,0,235), --默认颜色
+		ScopeDotSize = 1, --红点大小
+		ScopeCrossColor = Color(0,0,0,235), --默认颜色
+		ScopeCrossSize = 1, --如果你想你的十字变得更炫.....
+		ScopeCrossWidth = 1, --防止十字过大影响射击
+
+		-->后座
+
 		RecoilV = 0, --水平后座(一般不用设置)(Attachment: 偏移)&
 		RecoilV_Offset = 0.3, --水平后座偏移&
 		RecoilH = 0.4, --垂直后座(Attachment: 偏移)&
@@ -63,33 +102,29 @@ AddCSLuaFile()
 		TrueRecoilMul_Offset = 0.05, --这个东西修改的是Mul(所以别大于Mul)&
 		RecoilVMul = 1, --给Attachment用的,修改后座&
 		RecoilHMul = 1, --给Attachment用的,修改后座&
-		ShootSound = "weapons/m4a1/m4a1-1.wav", --射击音效(可为Table)
-		DoubleHand = true, --双手武器(单手使用有惩罚,这玩意拿去标记步枪,霰弹枪等武器)
+
+		-->弹药/弹夹
+
 		AmmoType = "ar2", --子弹类型
 		Magsize = 30, --弹夹容量(Attachment: 增加/减少的弹容量)
-		MuzzlePos = Vector(5,0,2), --枪口位置(干预特效)
 		MagOnBack = true, --使用和AUG(Famas,MA5B)一样的换弹方式(手枪: 使用左轮的换弹方式,不管它的弹仓是怎么工作的)
-		Automatic = true, --是否为自动武器&(哪种类型的修改最多就有哪种,e.g: 有5个强制全自动配件,5个强制半自动配件,那么看武器本体是否为全自动(这个当然也会加进去),反正就是比大小)
-		NextFireTime = 0.1, --下次射击的时间(Attachment: 下次射击时间的偏移)
 		NoMag = true, --是否要手动装弹(霰弹枪)
-		PumpAction = true, --泵动霰弹枪
-		BoltAction = true, --栓动武器(实际上栓在左手边因为CSS)
-		(二选一)
-		InsertSound = "weapons/m3/m3_insertshell.wav", --填弹音效(可为Table)
-		ForceHeavyWeapon = true, --大口径子弹模拟器
 
-		NoAim = false, --禁用瞄准(可能会被移除)
-		AimOffsetPos = Vector(), --瞄准位置偏移
-		AimOffsetAng = Angle(), --瞄准角度偏移
-		AimUseScope = false, --使用瞄准镜瞄准(狙击枪)
-		AimMouseSensMul = 1, --瞄准时鼠标灵敏度乘数(只要你瞄准你灵敏度就会低)
-		AimFovMul = 1, --瞄准时FOV乘数(瞄准时有降低,越低FOV越小(适用瞄准镜))
+		-->音效
+
+		ShootSound = "weapons/m4a1/m4a1-1.wav", --射击音效(可为Table)
+		InsertSound = "weapons/m3/m3_insertshell.wav", --填弹音效(可为Table)
+
+		-->特效
+
+		--如有多个Trace/MuzzleFlash/HitEffect,随机选一个
 
 		BulletTrace = "idk", --子弹的轨迹(默认为普通子弹)&
 		MuzzleFlash = "idk", --枪口火光(默认为普通火光)&
 		HitEffect = "idk", --枪口火光(默认为普通火光)&
-		--如有多个Trace/MuzzleFlash/HitEffect,随机选一个
 		MuzzleFlashFL = 0 --火光Flag
+
+		-->事件/事件音效
 
 		ReloadEvent_Start = function(self,owner) end, --在开始换弹(执行这个动作时)执行的func(也可为声音路径) &
 		ReloadEvent_ClipOut = function(self,owner) end, --在拔出弹夹执行的func(也可为声音路径) &
@@ -97,6 +132,8 @@ AddCSLuaFile()
 		ReloadEvent_ClipIn = function(self,owner) end, --插入弹夹时执行的func(也可为声音路径) &
 		ReloadEvent_LoadGun = function(self,owner) end, --上膛时执行的func(也可为声音路径) &
 		ReloadEvent_End = function(self,owner) end, --换弹结束后func(也可为声音路径) &
+
+		-->骨骼修改
 
 		--全局骨骼修改乘数&
 		BoneManipulates = {
@@ -227,6 +264,59 @@ local datatbl = {
 		AttackTimeModify = 0,
 		AttackDamageModify = 7,
 		AttackDamageModifyOffset = 3,
+		AttackDamageType = DMG_SLASH,
+	},
+	["models/props_interiors/furniture_lamp01a.mdl"] = {
+		Priority = 1,
+		OffsetPos = Vector(0,0,-15),
+		--OffsetAng = Angle(0,0,0), 
+		AttackTimeModify = 0.1,
+		AttackDamageModify = 4,
+		AttackDamageModifyOffset = 2,
+		AttackDamageType = DMG_CLUB,
+	},
+	["models/props_c17/chair_stool01a.mdl"] = {
+		Priority = 1,
+		OffsetPos = Vector(0,-0.5,10),
+		--OffsetAng = Angle(0,0,0), 
+		AttackTimeModify = -1,
+		AttackDamageModify = -7,
+		AttackDamageModifyOffset = 3,
+		AttackDamageType = DMG_CLUB,
+	},
+	["models/props_c17/chair_office01a.mdl"] = {
+		Priority = 1,
+		OffsetPos = Vector(0,-0.5,10),
+		--OffsetAng = Angle(0,0,0), 
+		AttackTimeModify = -1.5,
+		AttackDamageModify = -12,
+		AttackDamageModifyOffset = 5,
+		AttackDamageType = DMG_CLUB,
+	},
+	["models/props_c17/computer01_keyboard.mdl"] = {
+		Priority = 1,
+		OffsetPos = Vector(0,-3,-7),
+		OffsetAng = Angle(0,-50,90), 
+	},
+	["models/props_c17/metalpot002a.mdl"] = {
+		Priority = 2,
+		OffsetPos = Vector(0,0.2,-8),
+		OffsetAng = Angle(90,140,0), 
+		AttackTimeModify = 0.5,
+		AttackDamageModify = 7,
+		AttackDamageModifyOffset = 5,
+		AttackDamageType = DMG_CLUB,
+		MeleeHitSound = {
+			"doors/vent_open3.wav",
+		},
+	},
+	["models/props_c17/trappropeller_blade.mdl"] = {
+		Priority = 2,
+		OffsetPos = Vector(0,0,-5),
+		OffsetAng = Angle(0,-75,0), 
+		AttackTimeModify = -7,
+		AttackDamageModify = -30,
+		AttackDamageModifyOffset = 15,
 		AttackDamageType = DMG_SLASH,
 	},
 
@@ -594,7 +684,7 @@ local datatbl = {
 		BulletDamage = 9,
 		BulletDamageOffset = 2,
 		BulletSpread = Angle(0,2.5,2.5), --第一个值没用
-		ReloadSpeedMul = 0.85,
+		ReloadSpeedMul = 1.25,
 		ReloadSpeedAffectMul = 1,
 		RecoilV = 0,
 		RecoilV_Offset = 0.8,
@@ -841,6 +931,8 @@ local datatbl = {
 		AimUseScope = true,
 		AimMouseSensMul = 0.2,
 		AimFovMul = 0.2,
+		AimSpreadMul = 0.1,
+		ScopeType = 2,
 	},
 	["models/weapons/w_snip_scout.mdl"] = {
 		Priority = 3,
@@ -886,6 +978,8 @@ local datatbl = {
 		AimUseScope = true,
 		AimMouseSensMul = 0.35,
 		AimFovMul = 0.3,
+		AimSpreadMul = 0.05,
+		ScopeType = 2,
 		--[[BoneManipulatesAnimation = {
 			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(1,2.5,1.2)},
 			--["ValveBiped.Bip01_R_Clavicle"] = {Pos = Vector(2,1,0.5)},
@@ -903,7 +997,7 @@ local datatbl = {
 		BulletDamage = 35,
 		BulletDamageOffset = 5,
 		BulletSpread = Angle(0,0.1,0.1), --第一个值没用
-		ReloadSpeedMul = 1.35,
+		ReloadSpeedMul = 0.65,
 		ReloadSpeedAffectMul = 1,
 		RecoilV = 0,
 		RecoilV_Offset = 0.3,
@@ -936,6 +1030,8 @@ local datatbl = {
 		AimUseScope = true,
 		AimMouseSensMul = 0.4,
 		AimFovMul = 0.4,
+		AimSpreadMul = 0.1,
+		ScopeType = 2,
 		--[[BoneManipulatesAnimation = {
 			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(1,2.5,1.2)},
 			--["ValveBiped.Bip01_R_Clavicle"] = {Pos = Vector(2,1,0.5)},
@@ -953,7 +1049,7 @@ local datatbl = {
 		BulletDamage = 33,
 		BulletDamageOffset = 7,
 		BulletSpread = Angle(0,0.1,0.1), --第一个值没用
-		ReloadSpeedMul = 1.35,
+		ReloadSpeedMul = 0.65,
 		ReloadSpeedAffectMul = 1,
 		RecoilV = 0,
 		RecoilV_Offset = 0.3,
@@ -981,6 +1077,8 @@ local datatbl = {
 		AimUseScope = true,
 		AimMouseSensMul = 0.4,
 		AimFovMul = 0.4,
+		AimSpreadMul = 0.1,
+		ScopeType = 2,
 	},
 	["models/weapons/w_smg_mp5.mdl"] = {
 		Priority = 3,
@@ -1140,7 +1238,7 @@ local datatbl = {
 		BulletDamage = 5,
 		BulletDamageOffset = 3,
 		BulletSpread = Angle(0,1.25,1.35), --第一个值没用
-		ReloadSpeedMul = 1.35,
+		ReloadSpeedMul = 0.65,
 		ReloadSpeedAffectMul = 1,
 		RecoilV = 0,
 		RecoilV_Offset = 0.4,
@@ -1180,7 +1278,7 @@ local datatbl = {
 		BulletDamage = 10,
 		BulletDamageOffset = 2,
 		BulletSpread = Angle(0,0.75,0.75), --第一个值没用
-		ReloadSpeedMul = 0.5,
+		ReloadSpeedMul = 2,
 		ReloadSpeedAffectMul = 1,
 		RecoilV = 0,
 		RecoilV_Offset = 0.2,
@@ -1216,7 +1314,7 @@ local datatbl = {
 		BulletDamage = 6,
 		BulletDamageOffset = 2,
 		BulletSpread = Angle(0,1.65,1.65), --第一个值没用
-		ReloadSpeedMul = 0.4,
+		ReloadSpeedMul = 1.6,
 		ReloadSpeedAffectMul = 1,
 		RecoilV = 0,
 		RecoilV_Offset = 0.3,
@@ -1354,7 +1452,7 @@ local datatbl = {
 		BulletDamage = 45,
 		BulletDamageOffset = 10,
 		BulletSpread = Angle(0,0.25,0.25), --第一个值没用
-		ReloadSpeedMul = 1.35,
+		ReloadSpeedMul = 0.8,
 		ReloadSpeedAffectMul = 1,
 		RecoilV = 0,
 		RecoilV_Offset = 0.4,
@@ -1541,6 +1639,10 @@ end
 
 local MetaTable = {}
 function datatbl:__index(key)
+
+	if isentity(key) and IsValid(key) and key.NSPW_PROP_DISABLEPROPERTIES then
+		return {}
+	end
 
 	if isentity(key) and IsValid(key) and key.NSPW_PROP_PROPDATA then
 		if key.NSPW_PROP_PROPDATA_FORCEOVERRIDE then

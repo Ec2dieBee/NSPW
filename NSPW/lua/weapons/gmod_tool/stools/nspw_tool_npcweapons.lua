@@ -16,6 +16,7 @@ end
 
 -- An example clientside convar
 TOOL.ClientConVar[ "CLIENTSIDE" ] = "default"
+TOOL.ClientConVar[ "issmg" ] = "0"
 
 -- An example serverside convar
 TOOL.ServerConVar[ "SERVERSIDE" ] = "default"
@@ -209,8 +210,9 @@ function TOOL:LeftClick( tr )
 	wep.DupeDataC = TargetEnt
 	--wep:Spawn()
 	wep:Initialize()
+	local forcesmg = self:GetClientNumber( "issmg", 0 ) != 0
 	local ht = PropData.IsGun and (
-			(PropData.DoubleHand and 
+			forcesmg and "smg" or (PropData.DoubleHand and 
 				(PropData.BulletCount >= 4 and "shotgun" or ("ar2"))
 			) 
 			or "pistol") 
@@ -409,4 +411,10 @@ end
 
 -- This function/hook is called every frame on client and every tick on the server
 function TOOL:Think()
+end
+
+function TOOL.BuildCPanel( CPanel )
+
+	CPanel:AddControl( "CheckBox", { Label = "Use SMG Holdtype", Command = "nspw_tool_npcweapons_issmg" } )
+
 end

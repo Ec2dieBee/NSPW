@@ -2,12 +2,18 @@
 --(它是否要依赖SAL?)
 --玩家捡起东西,然后送光刻仪,然后一切物品全部NoDraw,然后该全绘制的时候就全绘制
 --[[
+
 	真.Credit
-	[YHG]骨灰蜜蜂: 做了这坨屎
-	Savee14702: 修复这坨屎并真正Re-worked这坨屎(是的这个东西应该是"重做..?"而不是"又工作了")
-	TheBillinator3000: 介绍SPW(或者SP2W)
-	NecrosViedos: 介绍SPW(或者SP2W)(以及留了个能用的存档)
-	稻谷MCUT: 优化,绘制优化
+	>代码
+	>>[YHG]骨灰蜜蜂: 做了这坨屎
+	>>Savee14702: 修复这坨屎并真正Re-worked这坨屎(是的这个东西应该是"重做..?"而不是"又工作了")
+	>>稻谷MCUT: 优化,绘制优化
+
+	>宣传
+	>>TheBillinator3000: 介绍SPW(或者SP2W)
+	>>NecrosViedos: 介绍SPW(或者SP2W)(以及留了个能用的存档)
+
+
 	所以你都看到这了,你为什么不想办法帮我Port几个Miku模型到kenshi呢?
 	(顺便帮忙Port几个Miku R-18模型到Gmod,谢了)
 ]]
@@ -26,9 +32,10 @@
 	攻击伤害检测(好了..?)
 	伤害类型检测(好了)
 	延迟判定(差不多)
+	枪械角度强制兼容 --(说实话手对上了角度也就差不多了)
 
 	[需进一步观望的]
-	枪械角度强制兼容(说实话手对上了角度也就差不多了)
+	Zeta(其实是Lambda) NPCS 兼容
 	Parented Entities(父子级实体)支持(修复了..?)
 	更好的Network(?)
 	格挡(武器击飞)
@@ -36,14 +43,17 @@
 	单手枪械动画
 
 	[未 竟 事 业]
+	工具
+	->PROPERTIES MODIFY
 	近战动画重做
-	Zeta(其实是Lambda) NPCS 兼容
 	NPC神必小武器支持(怎么刻数据?)
 	枪械系统完善
-	-瞄准
+	-> 瞄准[完成]
+	-> 手感优化(?)
 	Attachment(附加Prop)
 	PropData100%全收集
 	便于他人查看的UI
+	STYLE UI重做
 	翻新,以及SPW彩蛋(指暴击系统和一枪头模拟器)
 	优化
 
@@ -589,6 +599,12 @@ hook.Add("EntityTakeDamage","NSPW_Hooks_BlockDamage",function(ply,dinfo)
 	dinfo:SetDamage(dmg)
 
 	
+
+end)
+
+duplicator.RegisterEntityModifier( "NSPW_MODIFIER_PROPERTIESSTATE", function(p,e,d)
+
+	e.NSPW_PROP_DISABLEPROPERTIES = d[1]
 
 end)
 

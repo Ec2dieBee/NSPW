@@ -15,6 +15,42 @@
 
 AddCSLuaFile()
 
+local DebugMessageDraw = true
+
+local function DebugMessage(...)
+
+	if !GetConVar("savee_nspw_debugprint"):GetBool() then return end
+
+	local tbl = {...}
+
+	--下一Tick恢复
+
+	if DebugMessageDraw then
+		print("---------------==========START NSP2W DEBUG PRINT START==========---------------")
+		DebugMessageDraw = false
+	end
+
+	for _,v in pairs(tbl) do
+
+		if istable(v) then 
+			print("-----===NewLine===-----")
+			PrintTable(v)
+			print("-----===NewLine===-----")
+		else
+			print(v)
+		end
+
+	end
+
+
+
+	timer.Create("NSPW_DEBUG_RESETTIMER",0,1,function()
+		print("---------------==========ENDOF NSP2W DEBUG PRINT ENDOF==========---------------")
+		DebugMessageDraw = true
+	end)
+
+end
+
 local TestTbl = 
 {
 	"melee",
@@ -566,8 +602,10 @@ if SERVER then
 	function SWEP:ThinkHandleAttack(owner)
 
 		local on = self.MeleeAttacking
+		--owner:SetSequence(self.OwnerSwingSeq)
 
 		if !on then return end
+		
 
 		local start = self.MeleeAttackStart
 		local endtime = self.MeleeAttackEnd
@@ -578,6 +616,7 @@ if SERVER then
 
 			self.Attacked = {}
 			self.MeleeAttacking = false
+			--print("??")
 			--self.MeleeHit = false
 			self.MeleeHitTriggered = false
 
@@ -613,7 +652,7 @@ if SERVER then
 			if !IsValid(ent) then continue end
 
 			local tr = util.TraceEntityHull({
-				start = ent:GetPos(),
+				start = ent:GetPos()-owner:GetAimVector()*5,
 				endpos = ent:GetPos()+owner:GetAimVector()*40,
 				ignoreworld = true,
 				filter = filter,
@@ -730,24 +769,52 @@ if SERVER then
 
 		if owner:IsNPC() and IsValid(owner:GetEnemy()) then
 
+
 			local dist = owner:GetPos():DistToSqr(owner:GetEnemy():GetPos())
+			--print(self.MeleeAttacking)
 			if self.HoldType == "shotgun" and dist > 250000  then
 				owner:SetCondition(COND.TOO_FAR_TO_ATTACK)
 				--owner:SetSchedule(SCHED_MOVE_TO_WEAPON_RANGE)
-			elseif dist <= 3600 and owner:SelectWeightedSequence(ACT_MELEE_ATTACK1) >= 0 and !owner:IsCurrentSchedule(SCHED_MELEE_ATTACK1) then
+			elseif dist <= 4900 and !owner:IsCurrentSchedule(SCHED_MELEE_ATTACK1) and owner:SelectWeightedSequence(ACT_MELEE_ATTACK1) != - 1 then
 				--[[local oldht = self.HoldType
 				if owner:SelectWeightedSequence(ACT_MELEE_ATTACK1) < 0 then
 					self.HoldType = "melee"
 					owner:SetActivity(ACT_MELEE_ATTACK_SWING)
 				end]]
+				local SelectedSequence = owner:SelectWeightedSequence(ACT_MELEE_ATTACK1)
+				if SelectedSequence < 0 then
+					--local old = self.HoldType
+					--self:SetHoldType("melee")
+					SelectedSequence = owner:SelectWeightedSequence(ACT_MELEE_ATTACK_SWING)
+					--print(owner:GetSequenceName(SelectedSequence))
+					--self:SetHoldType(old)
+					--print("?")
+				end
+
+				--print("AA")
+
+				local Dur = owner:SequenceDuration(SelectedSequence)
+				owner:ClearSchedule()
+				owner:ClearGoal()
 				owner:SetSchedule(SCHED_MELEE_ATTACK1)
-				timer.Simple(0.2,function()
-					if !IsValid(owner) or !IsValid(self) then return end
-					self:Swing(owner,PropData,self:GetStyleData())
+				--owner:StartEngineTask(113, 5)
+				owner:SetSequence(SelectedSequence)
+				--owner:ResetSequence(SelectedSequence)
+				--owner:FrameAdvance(1)
+				--owner:TaskComplete()
+
+				self.OwnerSwingSeq = SelectedSequence
+				self:Swing(owner,PropData,self:GetStyleData())
 					--self.HoldType = oldht
-				end)
+				--end)
 				--print("1")
 				--owner:SetSchedule(SCHED_MOVE_TO_WEAPON_RANGE)
+			end
+
+			if owner:GetMoveVelocity():LengthSqr() <= 1600 then
+				self:SetAiming(true)
+			else
+				self:SetAiming(false)
 			end
 
 		end
@@ -770,7 +837,7 @@ if SERVER then
 			if !IsValid(ent) then continue end
 
 			local PropData = NSPW_DATA_PROPDATA[ent] or {}
-			Mul = Mul * (PropData.ReloadSpeedMul or 1)
+			Mul = Mul / (PropData.ReloadSpeedMul or 1)
 			Mul = Mul + (PropData.ReloadSpeedMulOffset or 0)
 
 			if PropData.ForceHeavyWeapon then
@@ -782,11 +849,12 @@ if SERVER then
 			end
 
 			local pobj = ent:GetPhysicsObject()
-			local CV = GetConVar(ent == self.DupeDataC and "savee_nspw_delay_massmul" or "savee_nspw_delay_massmulchildren")
+
+			local CV = ent == self.DupeDataC and 1 or GetConVar("savee_nspw_gun_childrenmassmul"):GetFloat()
 			if IsValid(pobj) then 
-				mass = mass + pobj:GetMass()*CV:GetFloat()
+				mass = mass + pobj:GetMass()*CV
 			else
-				mass = mass + GetConVar("savee_nspw_mass_nonphysics"):GetFloat()*CV:GetFloat()
+				mass = mass + GetConVar("savee_nspw_mass_nonphysics"):GetFloat()*CV
 			end
 
 		end
@@ -1167,9 +1235,12 @@ if SERVER then
 
 		end
 
+		local Dur = owner:SequenceDuration(self.OwnerSwingSeq or owner:GetSequence())
+		--print(Dur,owner:GetSequenceName(owner:GetSequence()))
 
-		self.MeleeAttackStart = CurTime()+MyStyle.AttackStart
-		self.MeleeAttackEnd = CurTime()+MyStyle.AttackEnd
+
+		self.MeleeAttackStart = CurTime()+(owner:IsPlayer() and MyStyle.AttackStart or Dur*0.45)
+		self.MeleeAttackEnd = CurTime()+(owner:IsPlayer() and MyStyle.AttackEnd or Dur*0.55)
 
 		self.MeleeAttacking = true
 		self:SetNextPrimaryFire(CurTime()+math.max(0.3,time))
@@ -1331,7 +1402,7 @@ function SWEP:Think()
 			if self.InReload then
 				self:ThinkHandleGunReload(owner)
 			end
-			if owner:IsNPC() and owner:IsCurrentSchedule(SCHED_MELEE_ATTACK1) then
+			if owner:IsNPC() and (owner:IsCurrentSchedule(SCHED_MELEE_ATTACK1) or self.MeleeAttacking) then
 				self:ThinkHandleAttack(owner)
 			end
 			--print("?")
@@ -1351,13 +1422,15 @@ function SWEP:Think()
 				if !owner:IsCurrentSchedule(SCHED_MELEE_ATTACK1) and !owner:IsCurrentSchedule(SCHED_CHASE_ENEMY) then
 
 					local dist = owner:GetPos():DistToSqr(owner:GetEnemy():GetPos())
-					if dist <= 4000  then
+					if dist <= 4500  then
 						owner:SetSchedule(SCHED_MELEE_ATTACK1)
-						--owner:SetActivity(ACT_MELEE_ATTACK1)
-						timer.Simple(0.2,function()
-							if !IsValid(owner) or !IsValid(self) then return end
-							self:PrimaryAttack()
-						end)
+						local SelectedSequence = owner:SelectWeightedSequence(ACT_MELEE_ATTACK_SWING)
+
+						owner:SetSequence(SelectedSequence)
+						--owner:StartEngineTask(103,SelectedSequence)
+						self.OwnerSwingSeq = SelectedSequence
+						self:PrimaryAttack()
+						--end)
 						--print("KTE")
 					elseif dist > 4000 and owner:GetCurrentSchedule() != SCHED_CHASE_ENEMY then
 						owner:SetSchedule(SCHED_CHASE_ENEMY)
@@ -1742,7 +1815,7 @@ function SWEP:PreDrawViewModel(vm)
 				if !IsValid(ent) then continue end
 
 				local PropData = NSPW_DATA_PROPDATA[ent] or {}
-				Mul = Mul * (PropData.ReloadSpeedMul or 1)
+				Mul = Mul / (PropData.ReloadSpeedMul or 1)
 				Mul = Mul + (PropData.ReloadSpeedMulOffset or 0)
 
 
@@ -1770,7 +1843,7 @@ function SWEP:PreDrawViewModel(vm)
 				if !IsValid(ent) then continue end
 
 				local PropData = NSPW_DATA_PROPDATA[ent] or {}
-				Mul = Mul * (PropData.ReloadSpeedMul or 1)
+				Mul = Mul / (PropData.ReloadSpeedMul or 1)
 				Mul = Mul + (PropData.ReloadSpeedMulOffset or 0)
 
 
@@ -2251,12 +2324,55 @@ function SWEP:DrawHUD()
 
 	local PropData = NSPW_DATA_PROPDATA[self.DupeDataC]
 
+	local W,H = ScrW(),ScrH()
+	local MulW,MulH = ScrW()/1920,ScrH()/1080
+
 	if PropData.AimUseScope and self.LastAim > 0.8 then
 		surface.SetDrawColor(255,255,255,255)
 		surface.SetMaterial(ScopeMat)
-		surface.DrawTexturedRect(0,(ScrH()-ScrW())/2,ScrW(),ScrW())
+		surface.DrawTexturedRect(0,(H-W)/2,W,W)
+
+		local ScopeType = PropData.ScopeType or 0
+
+		local function DrawCross()
+
+			local CrossWidth = (PropData.ScopeCrossWidth or 3)*MulH
+			local CrossColor = PropData.ScopeCrossColor or Color(0,0,0,235)
+
+			surface.SetDrawColor(CrossColor)
+
+			surface.DrawRect(0, (H-CrossWidth)/2, W, CrossWidth)
+			surface.DrawRect((W-CrossWidth)/2, 0, CrossWidth, H)
+
+		end
+
+		local function DrawDot()
+
+			local DotSize = (PropData.ScopeDotSize or 7)*MulH
+			local DotColor = PropData.ScopeDotColor or Color(185,0,0,235)
+
+			draw.RoundedBox(100, (W-DotSize)/2,(H-DotSize)/2,DotSize,DotSize,DotColor)
+
+		end
+
+		if ScopeType == 1 then
+
+			DrawDot()
+
+		elseif ScopeType == 2 then
+
+			DrawCross()
+
+		elseif ScopeType == 3 then
+
+			DrawCross()
+			DrawDot()
+
+		end
+
 		surface.SetDrawColor(0,0,0,Lerp(((self.LastAimRaw or 0)-1),255,0))
-		surface.DrawRect(0,0,ScrW(),ScrH())
+		surface.DrawRect(0,0,W,H)
+
 	end
 
 end
@@ -2298,7 +2414,7 @@ function SWEP:SecondaryAttack()
 			end
 		elseif MyStyle.IsGun and !self.InReload and !PropData.NoAim then
 
-			self:SetAiming(!self:GetAiming())
+			self:SetAiming(GetConVar("savee_nspw_gun_aim_enabled"):GetBool() and !self:GetAiming())
 
 		end
 		self:SetNextSecondaryFire(CurTime()+0.1)
@@ -2390,15 +2506,18 @@ function SWEP:PrimaryAttack()
 					end
 
 					local pobj = ent:GetPhysicsObject()
-					local CV = GetConVar(ent == self.DupeDataC and "savee_nspw_delay_massmul" or "savee_nspw_delay_massmulchildren")
+
+					local CV = ent == self.DupeDataC and 1 or GetConVar("savee_nspw_gun_childrenmassmul"):GetFloat()
 					if IsValid(pobj) then 
-						mass = mass + pobj:GetMass()*CV:GetFloat()
+						mass = mass + pobj:GetMass()*CV
 					else
-						mass = mass + GetConVar("savee_nspw_mass_nonphysics"):GetFloat()*CV:GetFloat()
+						mass = mass + GetConVar("savee_nspw_mass_nonphysics"):GetFloat()*CV
 					end
 
 
 				end
+
+				DebugMessage(mass)
 
 				if mass >= GetConVar("savee_nspw_heavygun"):GetFloat() then
 
@@ -2487,6 +2606,8 @@ function SWEP:PrimaryAttack()
 				local TrueRecoilOffset = PropData.TrueRecoilMul_Offset or 0
 
 				local Spread = PropData.BulletSpread or Angle(0,0,0)
+				local AimSpreadMul = 1
+				local AimRecoilMul = 1
 
 				local Trace,MF,HitEffect = {},{},{}
 
@@ -2530,6 +2651,9 @@ function SWEP:PrimaryAttack()
 					Spread = Spread * (PropData.BulletSpreadMul or 1)
 					Spread = Spread + (PropData.BulletSpread or Angle())
 
+					AimSpreadMul = AimSpreadMul * (PropData.AimSpreadMul or 1)
+					AimRecoilMul = AimRecoilMul * (PropData.AimRecoilMul or 1)
+
 				end
 				--print(math.random(1,#Trace),#Trace)
 				BC = math.max(1,BC)
@@ -2555,6 +2679,23 @@ function SWEP:PrimaryAttack()
 
 				MPos = self.DupeDataC:LocalToWorld(MPos)
 
+				if self:GetAiming() then
+
+					Spread = Spread * (0.85*AimSpreadMul) * GetConVar("savee_nspw_gun_aim_spreadreducemul"):GetFloat() 
+
+					local FV = 0.85 * AimRecoilMul * GetConVar("savee_nspw_gun_aim_recoilreducemul"):GetFloat()
+
+					RecoilH = RecoilH * FV
+					RecoilV = RecoilV * FV
+
+					OffsetH = OffsetH * FV
+					OffsetV = OffsetV * FV
+
+					TrueRecoil = TrueRecoil * FV
+					TrueRecoilOffset = TrueRecoilOffset * FV
+				
+				end
+				
 				--local HPos = owner:IsPlayer() and owner:GetEyeTrace().HitPos or util.QuickTrace(owner:EyePos(),owner:GetAimVector(),owner).HitPos
 
 				for i=1,BC do
@@ -2567,6 +2708,8 @@ function SWEP:PrimaryAttack()
 					if self.MarkedAsLambdaWep and IsValid(self.nspw_LambdaTarget)then
 						AimVec = (self.nspw_LambdaTarget:WorldSpaceCenter() - owner:EyePos()):GetNormalized()
 					end
+
+
 					if Spread != Angle(0,0,0) then
 
 						local bs = Spread
@@ -2817,7 +2960,7 @@ function SWEP:GetNPCBurstSettings()
 			return 1,1,1
 		end
 
-		return time < 0.65 and 2 or 1,time < 0.45 and 5 or 2,time
+		return time < 0.65 and 3 or 1,time < 0.45 and 7 or 2,time-0.05
 
 
 			
@@ -2931,7 +3074,7 @@ function SWEP:GetNPCRestTimes()
 
 		end
 
-		return time-0.05,time+0.1
+		return time+0.2,time+0.5
 
 
 			
