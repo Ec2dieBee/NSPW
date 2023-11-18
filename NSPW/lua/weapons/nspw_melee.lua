@@ -15,7 +15,7 @@
 
 AddCSLuaFile()
 
-local DebugMessageDraw = true
+local DebugMessageDraw = !true
 
 local function DebugMessage(...)
 
@@ -550,13 +550,14 @@ if SERVER then
 
 			if !IsValid(ent) then continue end
 
-			
 
 			local pobj = ent:GetPhysicsObject()
 
 			if IsValid(pobj) then
 				pobj:EnableMotion(false)
 				--pobj:EnableCollisions(false)
+				pobj:SetPos(ent:GetPos()) --防止位置出问题
+				pobj:SetAngles(ent:GetAngles()) --防止角度出问题
 				pobj:Sleep()
 			end
 
@@ -1239,16 +1240,18 @@ if SERVER then
 		--print(Dur,owner:GetSequenceName(owner:GetSequence()))
 
 
-		self.MeleeAttackStart = CurTime()+(owner:IsPlayer() and MyStyle.AttackStart or Dur*0.45)
+		self.MeleeAttackStart = CurTime()+(owner:IsPlayer() and MyStyle.AttackStart or Dur*0.35)
 		self.MeleeAttackEnd = CurTime()+(owner:IsPlayer() and MyStyle.AttackEnd or Dur*0.55)
 
 		self.MeleeAttacking = true
-		self:SetNextPrimaryFire(CurTime()+math.max(0.3,time))
+		self:SetNextPrimaryFire(owner:IsPlayer() and CurTime()+math.max(0.3,time) or 0)
 
 
 	end	
 
 else
+
+	local sdraw = include("saveelib/cl_saveelib_draw.lua")
 
 	local NSPW_SettingMenu
 
@@ -1423,11 +1426,11 @@ function SWEP:Think()
 
 					local dist = owner:GetPos():DistToSqr(owner:GetEnemy():GetPos())
 					if dist <= 4500  then
-						owner:SetSchedule(SCHED_MELEE_ATTACK1)
 						local SelectedSequence = owner:SelectWeightedSequence(ACT_MELEE_ATTACK_SWING)
 
-						owner:SetSequence(SelectedSequence)
-						--owner:StartEngineTask(103,SelectedSequence)
+						owner:SetSchedule(SCHED_MELEE_ATTACK1)
+						--owner:SetSequence(SelectedSequence)
+						owner:StartEngineTask(103,SelectedSequence)
 						self.OwnerSwingSeq = SelectedSequence
 						self:PrimaryAttack()
 						--end)
@@ -1459,11 +1462,11 @@ function SWEP:Think()
 
 		local vm = owner:GetViewModel()
 		local block = self:GetBlocking()
-		if IsValid(vm) then
+		--[[if IsValid(vm) then
 
 			--print("?")
 
-		end
+		end]]
 
 		local MyStyle = self:GetStyleData()
 
@@ -2133,7 +2136,10 @@ function SWEP:DrawWorldModel()
 			ent.NSPW_PROP_CL_RENDEROVERRIDESETTED = nil
 		end
 
+		--print("?")
+
 		ent:DrawModel()
+		ent:SetNoDraw(true)
 		--ent:SetParent(nil)
 
 
@@ -2572,7 +2578,7 @@ function SWEP:PrimaryAttack()
 				self:SetClip1(self:Clip1()-AmmoToTake)
 
 				local snd = PropData.ShootSound
-				owner:EmitSound(istable(snd) and snd[math.random(1,snd)] or snd or "weapons/pistol/pistol_fire2.wav",75)
+				owner:EmitSound(istable(snd) and snd[math.random(1,#snd)] or snd or "weapons/pistol/pistol_fire2.wav",75)
 
 				local dmgmod = PropData.BulletDamage or 0
 				local random = PropData.BulletDamageOffset or 0
@@ -2766,7 +2772,7 @@ function SWEP:PrimaryAttack()
 
 					TrueRecoil = math.Rand(TrueRecoil-TrueRecoilOffset,TrueRecoil+TrueRecoilOffset)
 					if owner:IsPlayer() then
-						owner:ViewPunch(Recoil*(MyStyle.RecoilMul or 1))
+						owner:ViewPunch(Recoil*(MyStyle.RecoilMul or 1)-owner:GetViewPunchAngles()/10)
 						owner:SetEyeAngles(owner:EyeAngles()+Recoil*TrueRecoil*(MyStyle.RecoilMul or 1))
 					end
 
@@ -2790,6 +2796,7 @@ function SWEP:PrimaryAttack()
 						Dmginfo:SetDamageType(DmgType)
 						Dmginfo:SetDamageForce(AimVec*Force*(PropData.BulletForce or 1))
 						Dmginfo:SetDamagePosition(tr.HitPos)
+						--Dmginfo:SetHit
 						Dmginfo:SetReportedPosition(tr.HitPos)
 						Dmginfo:SetInflictor(self.DupeDataC)
 						Dmginfo:SetAttacker(owner)

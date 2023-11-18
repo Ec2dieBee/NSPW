@@ -52,6 +52,7 @@
 	-> 手感优化(?)
 	Attachment(附加Prop)
 	PropData100%全收集
+	--Wiremod支持...
 	便于他人查看的UI
 	STYLE UI重做
 	翻新,以及SPW彩蛋(指暴击系统和一枪头模拟器)
@@ -67,6 +68,8 @@
 ]]
 
 if !SERVER then return end --放正确的地方
+
+AddCSLuaFile("saveelib/cl_saveelib_draw.lua")
 
 util.AddNetworkString("NSPW_TransStyleMessage")
 util.AddNetworkString("NSPW_TransTraceMessage")

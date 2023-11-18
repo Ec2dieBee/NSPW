@@ -188,7 +188,7 @@ local datatbl = {
 	},
 	["models/weapons/w_stunbaton.mdl"] = {
 		Priority = 2, --优先级越高越优先被放到手上
-		OffsetPos = Vector(0,0.5,-7), --偏移(以Local计(虽然跟啥也没说一样))
+		OffsetPos = Vector(0,-0.3,-7), --偏移(以Local计(虽然跟啥也没说一样))
 		OffsetAng = Angle(-90,90,0), --偏移(以Local计(虽然跟啥也没说一样))
 		AttackTimeModify = 0.65, --负数: 减少下次攻击所需时间,正数相反 :(
 		AttackDamageModify = 12, --负数: 减少伤害,正数相反
@@ -221,19 +221,68 @@ local datatbl = {
 			"weapons/crowbar/crowbar_impact2.wav"
 		},
 	},
+	["models/props/cs_militia/axe.mdl"] = {
+		Priority = 2, --优先级越高越优先被放到手上
+		OffsetPos = Vector(0,-0.2,-8), --偏移(以Local计(虽然跟啥也没说一样))
+		OffsetAng = Angle(0,0,-90), --偏移(以Local计(虽然跟啥也没说一样))
+		AttackTimeModify = 0.6, --负数: 减少下次攻击所需时间,正数相反 :(
+		AttackDamageModify = 32, --负数: 减少伤害,正数相反
+		AttackDamageModifyOffset = 4, --伤害随机值
+		AttackDamageType = DMG_SLASH, --伤害类型
+		BlockMulAdjust = 0.25, --格挡伤害乘数,值越高格挡时受到的伤害越低
+		BlockDamageMul = 0.8, --因格挡导致自己受伤时的伤害乘数
+		--BlockDamageType = DMG_GENERIC, --因格挡而受伤时强制的伤害类型
+		--[[MeleeHitSound = {
+			"weapons/crowbar/crowbar_impact1.wav",
+			"weapons/crowbar/crowbar_impact2.wav"
+		},]]
+	},
 	["models/props_junk/harpoon002a.mdl"] = {
-		Priority = 1,
-		OffsetPos = Vector(0,0,0),
+		Priority = 2,
+		OffsetPos = Vector(0,0,-25),
 		OffsetAng = Angle(90,0,0), 
-		AttackTimeModify = 0,
-		AttackDamageModify = 15,
-		AttackDamageModifyOffset = 5,
+		AttackTimeModify = -8.5,
+		AttackDamageModify = -145,
+		AttackDamageModifyOffset = -17,
 		AttackDamageType = DMG_SLASH,
+	},
+	["models/props_junk/ibeam01a.mdl"] = {
+		Priority = 1,
+		OffsetPos = Vector(0,0,-55),
+		OffsetAng = Angle(90,0,0), 
+		AttackDamageType = DMG_CLUB,
+	},
+	["models/props_lab/bewaredog.mdl"] = {
+		Priority = 1,
+		OffsetPos = Vector(1,0,5),
+		--OffsetAng = Angle(90,0,0), 
+		AttackDamageType = DMG_CLUB,
+	},
+	["models/props_lab/desklamp01.mdl"] = {
+		Priority = 1,
+		OffsetPos = Vector(5,0,-4),
+		--OffsetAng = Angle(90,0,0), 
+		AttackDamageType = DMG_CLUB,
+	},
+	["models/props_junk/ibeam01a_cluster01.mdl"] = {
+		Priority = 1,
+		OffsetPos = Vector(0,0,-55),
+		OffsetAng = Angle(90,0,0), 
+		AttackDamageType = DMG_CLUB,
 	},
 	["models/props_junk/shovel01a.mdl"] = {
 		Priority = 2,
 		OffsetPos = Vector(-1,0,-15),
 		OffsetAng = Angle(0,0,180), 
+		AttackTimeModify = 0.5,
+		AttackDamageModify = 24,
+		AttackDamageModifyOffset = 7,
+		AttackDamageType = DMG_CLUB,
+	},
+	["models/props_junk/meathook001a.mdl"] = {
+		Priority = 2,
+		OffsetPos = Vector(3,0,-13),
+		OffsetAng = Angle(0,90,180), 
 		AttackTimeModify = 0.5,
 		AttackDamageModify = 24,
 		AttackDamageModifyOffset = 7,
@@ -253,8 +302,17 @@ local datatbl = {
 		OffsetPos = Vector(0,0,0),
 		OffsetAng = Angle(180,0,-90), 
 		AttackTimeModify = 0,
-		AttackDamageModify = 7,
+		AttackDamageModify = 4,
 		AttackDamageModifyOffset = 3,
+		AttackDamageType = DMG_SLASH,
+	},
+	["models/props_c17/tools_pliers01a.mdl"] = {
+		Priority = 1,
+		OffsetPos = Vector(0,0,0),
+		OffsetAng = Angle(180,0,-90), 
+		AttackTimeModify = 0,
+		AttackDamageModify = 4,
+		AttackDamageModifyOffset = 2,
 		AttackDamageType = DMG_SLASH,
 	},
 	["models/props/cs_office/water_bottle.mdl"] = {
@@ -293,6 +351,39 @@ local datatbl = {
 		AttackDamageModifyOffset = 5,
 		AttackDamageType = DMG_CLUB,
 	},
+	["models/props_c17/chair02a.mdl"] = {
+		Priority = 1,
+		OffsetPos = Vector(-8,-3,-5),
+		--OffsetAng = Angle(0,0,0), 
+		AttackTimeModify = 0,
+		AttackDamageModify = 0,
+		AttackDamageModifyOffset = 0,
+		AttackDamageType = DMG_CLUB,
+	},
+	["models/props_c17/furniturechair001a.mdl"] = {
+		Priority = 1,
+		OffsetPos = Vector(9,-8,-15),
+		--OffsetAng = Angle(0,0,0), 
+		AttackTimeModify = 0,
+		AttackDamageModify = 0,
+		AttackDamageModifyOffset = 0,
+		AttackDamageType = DMG_CLUB,
+	},
+	["models/props_c17/furnituretable001a.mdl"] = {
+		Priority = 1,
+		OffsetPos = Vector(15,-15,-8),
+		--OffsetAng = Angle(0,0,0), 
+	},
+	["models/props_c17/furnituretable002a.mdl"] = {
+		Priority = 1,
+		OffsetPos = Vector(15,-27,-8),
+		--OffsetAng = Angle(0,0,0), 
+	},
+	["models/props_c17/furnituretable003a.mdl"] = {
+		Priority = 1,
+		OffsetPos = Vector(13,-20,-3),
+		--OffsetAng = Angle(0,0,0), 
+	},
 	["models/props_c17/computer01_keyboard.mdl"] = {
 		Priority = 1,
 		OffsetPos = Vector(0,-3,-7),
@@ -315,9 +406,66 @@ local datatbl = {
 		OffsetPos = Vector(0,0,-5),
 		OffsetAng = Angle(0,-75,0), 
 		AttackTimeModify = -7,
-		AttackDamageModify = -30,
-		AttackDamageModifyOffset = 15,
+		AttackDamageModify = -120,
+		AttackDamageModifyOffset = 35,
 		AttackDamageType = DMG_SLASH,
+	},
+	["models/props_trainstation/payphone_reciever001a.mdl"] = {
+		OffsetPos = Vector(9,0,18),
+		OffsetAng = Angle(0,180,0), 
+	},
+	["models/props_vehicles/carparts_muffler01a.mdl"] = {
+		Priority = 1,
+		OffsetPos = Vector(9,-2,-22),
+		OffsetAng = Angle(90,0,90), 
+	},
+	["models/props_phx/misc/fender.mdl"] = {
+		Priority = 2,
+		OffsetPos = Vector(-2,-2,-13),
+		OffsetAng = Angle(90,180,0), 
+		AttackTimeModify = 1.2,
+		AttackDamageModify = 25,
+		AttackDamageModifyOffset = 5,
+		AttackDamageType = DMG_CLUB,
+	},
+	--这玩意我一开始以为是一把刀...
+	["models/props_wasteland/prison_throwswitchlever001.mdl"] = {
+		Priority = 2,
+		OffsetPos = Vector(0,0,-7),
+		OffsetAng = Angle(0,180,180), 
+		AttackTimeModify = -0.3,
+		AttackDamageType = DMG_CLUB,
+	},
+	--替代扫把(大虚)
+	["models/props_wasteland/tram_lever01.mdl"] = {
+		Priority = 2,
+		OffsetPos = Vector(0,0,-15),
+		OffsetAng = Angle(10,180,180), 
+		AttackTimeModify = 0,
+		AttackDamageModify = 7,
+		AttackDamageModifyOffset = 5,
+		AttackDamageType = DMG_CLUB,
+	},
+	--Wiremod Stuffs
+	["models/bull/various/usb_stick.mdl"] = {
+		Priority = 1,
+		OffsetPos = Vector(0,-2,0),
+		OffsetAng = Angle(-90,0,0), 
+	},
+	["models/cheeze/wires/wireless_card.mdl"] = {
+		Priority = 1,
+		OffsetPos = Vector(0,-2,0),
+		OffsetAng = Angle(90,0,0), 
+	},
+	["models/fasteroid/plugs/sd_card.mdl"] = {
+		Priority = 1,
+		OffsetPos = Vector(0,-2,-5),
+		OffsetAng = Angle(0,90,90), 
+	},
+	["models/cheeze/wires/ram.mdl"] = {
+		Priority = 1,
+		OffsetPos = Vector(0,-2,0),
+		OffsetAng = Angle(0,0,90), 
 	},
 
 
@@ -524,7 +672,7 @@ local datatbl = {
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 9,
+		BulletDamage = 30,
 		BulletDamageOffset = 3,
 		BulletSpread = Angle(0,1,1), --第一个值没用
 		ReloadSpeedMul = 1,
@@ -562,7 +710,7 @@ local datatbl = {
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 11,
+		BulletDamage = 35,
 		BulletDamageOffset = 2,
 		BulletSpread = Angle(0,1,1), --第一个值没用
 		ReloadSpeedMul = 1,
@@ -715,7 +863,7 @@ local datatbl = {
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 10,
+		BulletDamage = 22,
 		BulletDamageOffset = 3,
 		BulletSpread = Angle(0,0.75,0.75), --第一个值没用
 		ReloadSpeedMul = 1,
@@ -755,7 +903,7 @@ local datatbl = {
 		FreeReload = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 6,
+		BulletDamage = 7,
 		BulletDamageOffset = 1,
 		BulletSpread = Angle(0,1.35,1), --第一个值没用
 		ReloadSpeedMul = 1,
@@ -842,7 +990,7 @@ local datatbl = {
 		FreeReload = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 6,
+		BulletDamage = 7,
 		BulletDamageOffset = 2,
 		BulletSpread = Angle(0,1.35,1.35), --第一个值没用
 		ReloadSpeedMul = 1,
@@ -888,8 +1036,8 @@ local datatbl = {
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 65,
-		BulletDamageOffset = 15,
+		BulletDamage = 125,
+		BulletDamageOffset = 5,
 		BulletSpread = Angle(0,0.05,0.05), --第一个值没用
 		ReloadSpeedMul = 1,
 		ReloadSpeedAffectMul = 1,
@@ -942,8 +1090,8 @@ local datatbl = {
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 45,
-		BulletDamageOffset = 15,
+		BulletDamage = 65,
+		BulletDamageOffset = 7,
 		BulletSpread = Angle(0,0.05,0.05), --第一个值没用
 		ReloadSpeedMul = 1,
 		ReloadSpeedAffectMul = 1,
@@ -994,7 +1142,7 @@ local datatbl = {
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 35,
+		BulletDamage = 45,
 		BulletDamageOffset = 5,
 		BulletSpread = Angle(0,0.1,0.1), --第一个值没用
 		ReloadSpeedMul = 0.65,
@@ -1046,7 +1194,7 @@ local datatbl = {
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 33,
+		BulletDamage = 40,
 		BulletDamageOffset = 7,
 		BulletSpread = Angle(0,0.1,0.1), --第一个值没用
 		ReloadSpeedMul = 0.65,
@@ -1089,7 +1237,7 @@ local datatbl = {
 		DoubleHand = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 7,
+		BulletDamage = 9,
 		BulletDamageOffset = 2,
 		BulletSpread = Angle(0,0.85,0.85), --第一个值没用
 		ReloadSpeedMul = 1,
@@ -1128,7 +1276,7 @@ local datatbl = {
 		IsGun = true,
 		BulletDamageType = DMG_BUCKSHOT,
 		BulletCount = 8,
-		BulletDamage = 11,
+		BulletDamage = 15,
 		BulletDamageOffset = 3,
 		BulletSpread = Angle(0,3,3), --第一个值没用
 		ReloadSpeedMul = 1,
@@ -1164,7 +1312,7 @@ local datatbl = {
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 10,
+		BulletDamage = 28,
 		BulletDamageOffset = 3,
 		BulletSpread = Angle(0,1.5,1.5), --第一个值没用
 		ReloadSpeedMul = 1,
@@ -1200,7 +1348,7 @@ local datatbl = {
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 5,
+		BulletDamage = 10,
 		BulletDamageOffset = 3,
 		BulletSpread = Angle(0,1,1), --第一个值没用
 		ReloadSpeedMul = 1,
@@ -1235,7 +1383,7 @@ local datatbl = {
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 5,
+		BulletDamage = 12,
 		BulletDamageOffset = 3,
 		BulletSpread = Angle(0,1.25,1.35), --第一个值没用
 		ReloadSpeedMul = 0.65,
@@ -1311,7 +1459,7 @@ local datatbl = {
 		FreeReload = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 6,
+		BulletDamage = 12,
 		BulletDamageOffset = 2,
 		BulletSpread = Angle(0,1.65,1.65), --第一个值没用
 		ReloadSpeedMul = 1.6,
@@ -1356,7 +1504,7 @@ local datatbl = {
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 13,
+		BulletDamage = 18,
 		BulletDamageOffset = 3,
 		BulletSpread = Angle(0,0.5,0.5), --第一个值没用
 		ReloadSpeedMul = 1,
@@ -1449,7 +1597,7 @@ local datatbl = {
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 45,
+		BulletDamage = 65,
 		BulletDamageOffset = 10,
 		BulletSpread = Angle(0,0.25,0.25), --第一个值没用
 		ReloadSpeedMul = 0.8,
@@ -1511,6 +1659,53 @@ local datatbl = {
 		ReloadEvent_Start = "weapons/pistol/pistol_reload1.wav",
 		NextFireTime = 0.1,
 	},
+	["models/combine_turrets/ground_turret.mdl"] = {
+		Priority = 2,
+		OffsetPos = Vector(16,-9,15),
+		OffsetAng = Angle(172,179.5,0),
+		AttackDamageType = DMG_CLUB,
+		IsGun = true,
+		BulletDamageType = DMG_BULLET,
+		BulletCount = 1,
+		BulletDamage = 10,
+		BulletDamageOffset = 2,
+		BulletSpread = Angle(0,3,3), --第一个值没用
+		ReloadSpeedMul = 0.5,
+		ReloadSpeedAffectMul = 1,
+		RecoilV = 0,
+		RecoilV_Offset = 1.35,
+		RecoilH = 1.75,
+		RecoilH_Offset = 0.65,
+		TrueRecoilMul = 0.55, --枪口上跳?(不是ViewPunch),建议不大于1
+		TrueRecoilMul_Offset = 0.1, --这个东西修改的是Mul
+		--RecoilVMul = 1, --给Attachment用的
+		--RecoilHMul = 1, --给Attachment用的
+		ShootSound = {
+			"npc/turret_floor/shoot1.wav",
+			"npc/turret_floor/shoot2.wav",
+			"npc/turret_floor/shoot3.wav",
+		},
+		NoAim = true,
+		AmmoType = "ar2",
+		Magsize = 200,
+		MuzzlePos = Vector(25,0,-17),
+		MagOnBack = true,
+		DoubleHand = true,
+		FreeReload = true,
+		Automatic = true,
+		BulletTrace = "HunterTracer",
+		--[[ReloadEvent_ClipOut = "weapons/p228/p228_clipout.wav",
+		ReloadEvent_ClipIn = "weapons/p228/p228_clipin.wav",
+		ReloadEvent_LoadGun = "weapons/p228/p228_sliderelease.wav",]]
+		--ReloadEvent_Start = "weapons/pistol/pistol_reload1.wav",
+		NextFireTime = 0.06,
+		BoneManipulates = {
+			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(-1,-5,5.5),Ang = Angle(0,0,0)},
+			["ValveBiped.Bip01_R_Clavicle"] = {Pos = Vector(0,0,-1),Ang = Angle(0,0,0)},
+		},
+		ForceHeavyWeapon = true,
+		MuzzleFlashFL = 5,
+	},
 	--Attachment
 	["models/items/combine_rifle_ammo01.mdl"] = {
 		
@@ -1527,12 +1722,23 @@ local datatbl = {
 		RecoilVMul = 1.5,
 		BulletCallback = function(self,attacker,trace,damageinfo,tr,_,he)
 			damageinfo:SetDamage(damageinfo:GetDamage()+math.random(8,13))
-			damageinfo:SetDamageType(bit.bor(damageinfo:GetDamage(),DMG_ENERGYBEAM))
+			damageinfo:SetDamageType(bit.bor(damageinfo:GetDamageType(),DMG_ENERGYBEAM))
 			tr("GaussTracer")
 			he("StunstickImpact")
 		end,
 		BulletSpreadMul = 1.65,
 		NextFireTime = -0.05,
+	},
+	["models/props_junk/gascan001a.mdl"] = {
+		OffsetPos = Vector(15,-1.5,-2),
+		OffsetAng = Angle(180,90,90),
+		AttackDamageType = DMG_CLUB,
+		RecoilVMul = 2,
+		BulletCallback = function(self,attacker,trace,damageinfo,tr,_,he)
+			damageinfo:SetDamageType(bit.bor(damageinfo:GetDamageType(),DMG_BURN))
+		end,
+		BulletSpreadMul = 2,
+		NextFireTime = 0.1,
 	},
 	["models/items/car_battery01.mdl"] = {
 		
@@ -1580,11 +1786,62 @@ local datatbl = {
 		NextFireTime = 0.15,
 
 	},
+	--射出额外弹丸,请
+	["models/items/crossbowrounds.mdl"] = {
+		
+		OffsetPos = Vector(0,0,-5),
+		OffsetAng = Angle(90,0,0),
+		AttackDamageType = DMG_SLASH,
+
+	},
+	["models/props_c17/utilityconnecter006.mdl"] = { --玩高压电线玩的
+		
+		OffsetPos = Vector(0,0,-5),
+		OffsetAng = Angle(0,0,90),
+		AttackDamageType = DMG_SHOCK,
+		BulletTrace = "LaserTracer",
+		BulletCallback = function(self,attacker,trace,damageinfo,tr)
+			if math.random(1,100) <= 45 then 
+				damageinfo:SetDamageType(DMG_SHOCK)
+				damageinfo:SetDamage(damageinfo:GetDamage()+math.random(1,3))
+			end
+		end,
+
+	},
+	--你家装煤气的现在拿煤气罐子轮你了,喜欢吗
+	["models/props_explosive/explosive_butane_can.mdl"] = {
+		Priority = 1,
+		OffsetPos = Vector(31,-5,0),
+		OffsetAng = Angle(0,90,90), 
+		AttackDamageType = DMG_CLUB,
+		BulletCallback = function(self,attacker,trace,damageinfo,tr)
+			
+			if math.random(1,100) <= 15 then 
+				damageinfo:SetDamageType(DMG_SLOWBURN)
+				damageinfo:SetDamage(damageinfo:GetDamage()-math.random(5,13))
+			end
+		end,
+	},
+	--别问,问就是我定睛一看当场下了这玩意容量比上面那玩意大的定义
+	["models/props_explosive/explosive_butane_can02.mdl"] = {
+		Priority = 1,
+		OffsetPos = Vector(40,-5,0),
+		OffsetAng = Angle(45,90,90), 
+		AttackDamageType = DMG_CLUB,
+		BulletCallback = function(self,attacker,trace,damageinfo,tr)
+			if math.random(1,100) <= 35 then 
+				damageinfo:SetDamageType(bit.bor(damageinfo:GetDamageType(),DMG_BURN))
+				damageinfo:SetDamage(damageinfo:GetDamage()-math.random(3,9))
+			end
+		end,
+	},
 }
 
 --InheritFromData(string ToPropModel, string FromPropModel,table modify)
 
-local function InheritFromData(to,from,mod)
+local function InheritFromData(from,to,mod)
+
+	if !mod then mod = {} end
 
 	local tbl = table.Copy(datatbl[from] or {})
 
@@ -1610,13 +1867,13 @@ local function InheritFromData(to,from,mod)
 
 end
 
-InheritFromData("models/weapons/w_rif_m4a1_silencer.mdl","models/weapons/w_rif_m4a1.mdl",{
+InheritFromData("models/weapons/w_rif_m4a1.mdl","models/weapons/w_rif_m4a1_silencer.mdl",{
 	BulletDamage = 8,
 	BulletDamageOffset = 2,
 	ShootSound = "weapons/m4a1/m4a1-1.wav",
 	NextFireTime = 0.08,
 })
-InheritFromData("models/weapons/w_pist_usp_silencer.mdl","models/weapons/w_pist_usp.mdl",{
+InheritFromData("models/weapons/w_pist_usp.mdl","models/weapons/w_pist_usp_silencer.mdl",{
 	OffsetPos = Vector(1,0.8,2),
 		--OffsetAng = Angle(10.6,-0.5,-2),,
 	RecoilV = 0,
@@ -1629,6 +1886,9 @@ InheritFromData("models/weapons/w_pist_usp_silencer.mdl","models/weapons/w_pist_
 	BulletDamage = 10,
 	ShootSound = "weapons/usp/usp1.wav",
 })
+
+InheritFromData("models/props_junk/gascan001a.mdl","models/props_junk/metalgascan.mdl")
+InheritFromData("models/props/cs_militia/axe.mdl","models/props_forest/axe.mdl")
 
 --好,别忘了加客户端发服务端的"自定义数据获取请求"
 
