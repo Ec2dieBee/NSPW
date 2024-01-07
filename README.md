@@ -36,3 +36,6 @@ HEV Battery - More damage,but also more bullet spread(Changes trace)
 
 # Other things
 You are NOT allowed to upload this addon to Workshop/other website(maybe....???????)
+
+# MANUAL INSTALLATION
+Remove nspw_gun.lua simply,that's it(cuz it's nothing)
