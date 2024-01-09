@@ -2,13 +2,15 @@ AddCSLuaFile()
 
 if SERVER then return end
 
+local EntMeta = FindMetaTable("Entity")
+
 net.Receive("NSPW_TransTraceMessage",function()
 
 	local Wep = net.ReadEntity()
 	local Src = Vector(net.ReadFloat(),net.ReadFloat(),net.ReadFloat())
 	local Dir = Vector(net.ReadFloat(),net.ReadFloat(),net.ReadFloat())
 	local owner = Wep:GetOwner()
-	local PropData = NSPW_DATA_PROPDATA[Wep.DupeDataC:GetModel()]
+	local PropData = NSPW_DATA_PROPDATA(Wep.DupeDataC:GetModel())
 	local HS = PropData.BulletHullSize or 0
 	--print(IsValid(o) , o:GetShootPos() , Wep:GetPos())
 
@@ -76,6 +78,8 @@ net.Receive("NSPW_TransPropTableMessage",function()
 
 	local Wep = net.ReadEntity()
 	local DupeDataC = net.ReadEntity()
+	--local DrawAxis = net.ReadString()
+	--local Dist,DrawX,DrawY = net.ReadFloat(),net.ReadFloat(),net.ReadFloat()
 	local Count = net.ReadUInt(16)
 	local DupeData = {}
 
@@ -86,12 +90,27 @@ net.Receive("NSPW_TransPropTableMessage",function()
 
 		if !IsValid(Ent) then continue end
 		--print(Wep.DupeData)
-		DupeData[Ent] = {}
+		--Ent:SetParent(NULL)
+		if Ent.NSPW_PROP_CL_PREDICTABLE == nil then
+			Ent.NSPW_PROP_CL_PREDICTABLE = EntMeta.GetPredictable(Ent)
+		end
+		--if isfunction(Ent.Draw) then
+			EntMeta.SetPredictable(Ent,true)
+		--end
+		--[[timer.Simple(1,function()
+			if !IsValid(Ent) then return end
+		end)]]
+		--GM.NotifyShouldTransmit(Ent,true)
+
+		DupeData[Ent] = {} --{Pos = net.ReadVector(),Ang = net.ReadAngle()}
 
 	end
 	Wep.DupeDataC = DupeDataC
 	Wep.DupeData = DupeData
 	Wep.DupeDataInitialized = true
+	--Wep.NSPW_DrawAxis = DrawAxis
+	--Wep.NSPW_DrawSize = {DrawX,DrawY,Dist}
+	--Wep.DataSynced = true
 	--PrintTable(TBL)
 
 end)

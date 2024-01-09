@@ -701,6 +701,9 @@ local datatbl = {
 		--ReloadEvent_End = "weapons/m4a1/m4a1_unsil-1.wav",
 		AimOffsetPos = Vector(0,0,-3.4),
 		AimOffsetAng = Angle(),
+		BoneManipulatesAnimation = {
+			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(1,-1.3,-0.5)},
+		},
 	},
 	["models/weapons/w_rif_aug.mdl"] = {
 		Priority = 3,
@@ -1582,7 +1585,7 @@ local datatbl = {
 		ReloadEvent_LoadGun = "weapons/ump45/ump45_boltslap.wav",]]
 		--ReloadEvent_Start = "weapons/ar2/ar2_reload.wav",
 		BoneManipulatesAnimation = {
-			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(0,1,0)},
+			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(-0.3,3,1.4)},
 			--["ValveBiped.Bip01_R_Clavicle"] = {Pos = Vector(2,1,0.5)},
 			--[0] = {Pos = Vector(0,0,0)},
 		},
@@ -1604,7 +1607,7 @@ local datatbl = {
 		ReloadSpeedAffectMul = 1,
 		RecoilV = 0,
 		RecoilV_Offset = 0.4,
-		RecoilH = 0.55,
+		RecoilH = 3.55,
 		RecoilH_Offset = 0.2,
 		TrueRecoilMul = 0.45, --枪口上跳?(不是ViewPunch),建议不大于1
 		TrueRecoilMul_Offset = 0.2, --这个东西修改的是Mul
@@ -1897,28 +1900,116 @@ for _,_ in pairs(datatbl) do
 	Count = Count+1
 end
 
-local MetaTable = {}
+--[[local MetaTable = {}
 function datatbl:__index(key)
 
 	if isentity(key) and IsValid(key) and key.NSPW_PROP_DISABLEPROPERTIES then
+		print("因数据被强制取消而返还空")
 		return {}
 	end
 
 	if isentity(key) and IsValid(key) and key.NSPW_PROP_PROPDATA then
+		print("进程: 实体有特技")
+
 		if key.NSPW_PROP_PROPDATA_FORCEOVERRIDE then
+			print("->返还了实体本身的表")
 			return key.NSPW_PROP_PROPDATA
 		else
-			return table.Inherit(key.NSPW_PROP_PROPDATA,datatbl[key:GetModel()])
+
+			local tbl = table.Copy(key.NSPW_PROP_PROPDATA)
+
+			local keys = {}
+
+			for i,_ in pairs(tbl) do
+
+				keys[i] = true
+
+			end
+
+			--print(isentity(key) and IsValid(key) and key.NSPW_PROP_PROPDATA)
+
+			for i,data in pairs(datatbl[key:GetModel()] or {}) do
+
+				if !keys[i] then
+
+					tbl[i] = data
+
+				end
+
+			end
+			print("-> 返还了普通的表")
+
+			return tbl
 		end
+
 	else
-		return datatbl[isentity(key) and key:GetModel() or key] or {}
+		local tbl = datatbl[isentity(key) and string.lower(key:GetModel() or "") or (string.lower(key))]
+		if !istable(tbl) then 
+			print("这是一坨被加工的屎,其中这坨屎是",IsValid(key))
+			tbl = {} 
+		end
+		print("这是一坨屎")
+		return tbl
 	end
 
 end
 
 setmetatable(MetaTable,datatbl)
 
-NSPW_DATA_PROPDATA = MetaTable
+NSPW_DATA_PROPDATA = MetaTable]]
+NSPW_DATA_PROPDATA = function(key)
+
+	if isentity(key) and !IsValid(key) then return {} end
+
+	if isentity(key) and IsValid(key) and key.NSPW_PROP_DISABLEPROPERTIES then
+		--print("因数据被强制取消而返还空")
+		return {}
+	end
+
+	if isentity(key) and IsValid(key) and key.NSPW_PROP_PROPDATA then
+		--print("进程: 实体有特技")
+
+		if key.NSPW_PROP_PROPDATA_FORCEOVERRIDE then
+			--print("->返还了实体本身的表")
+			return key.NSPW_PROP_PROPDATA
+		else
+
+			local tbl = table.Copy(key.NSPW_PROP_PROPDATA)
+
+			local keys = {}
+
+			for i,_ in pairs(tbl) do
+
+				keys[i] = true
+
+			end
+
+			--print(isentity(key) and IsValid(key) and key.NSPW_PROP_PROPDATA)
+
+			for i,data in pairs(datatbl[key:GetModel()] or {}) do
+
+				if !keys[i] then
+
+					tbl[i] = data
+
+				end
+
+			end
+			--print("-> 返还了普通的表")
+
+			return tbl
+		end
+
+	else
+		local tbl = datatbl[isentity(key) and string.lower(key:GetModel() or "") or (string.lower(key or ""))]
+		if !istable(tbl) then 
+			--print("这是一坨被加工的屎,其中这坨屎是",IsValid(key))
+			tbl = {} 
+		end
+		--print("这是一坨屎")
+		return tbl
+	end
+end
 _NSPW_DATA_PROPDATA = datatbl
 
 print("NSPW的Prop数据现在有[原版]: "..Count)

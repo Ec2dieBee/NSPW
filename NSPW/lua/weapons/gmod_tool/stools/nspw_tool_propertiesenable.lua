@@ -66,6 +66,8 @@ local ConstraintWhiteList = {
 -- This function/hook is called when the player presses their left click
 function TOOL:LeftClick( tr )
 
+	if CLIENT then return true end
+
 	local ent = tr.Entity
 
 	if !IsValid(ent) then
@@ -84,6 +86,8 @@ end
 -- This function/hook is called when the player presses their right click
 function TOOL:RightClick( tr )
 
+	if CLIENT then return true end
+
 	local ent = tr.Entity
 
 	if !IsValid(ent) then
@@ -99,8 +103,6 @@ end
 
 -- This function/hook is called when the player presses their reload key
 function TOOL:Reload( trace )
-	-- The SWEP doesn't reload so this does nothing :(
-	Msg( "RELOAD\n" )
 end
 
 -- This function/hook is called every frame on client and every tick on the server

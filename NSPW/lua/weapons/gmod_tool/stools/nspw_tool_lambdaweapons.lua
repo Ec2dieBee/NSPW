@@ -66,6 +66,8 @@ local ConstraintWhiteList = {
 -- This function/hook is called when the player presses their left click
 function TOOL:LeftClick( tr )
 
+	if CLIENT then return true end
+
 	local TargetEnt = tr.Entity
 
 	if !TargetEnt then return end
@@ -105,14 +107,14 @@ function TOOL:LeftClick( tr )
 	local PropData = {}
 	for i,data in pairs(Dupe.Entities) do
 
-		if !NSPW_DATA_PROPDATA[data.Model] then continue end
+		if !NSPW_DATA_PROPDATA(data.Model) then continue end
 
-		if (NSPW_DATA_PROPDATA[data.Model].Priority or 0) > CurPriority then
+		if (NSPW_DATA_PROPDATA(data.Model).Priority or 0) > CurPriority then
 
-			CurPriority = NSPW_DATA_PROPDATA[data.Model].Priority
+			CurPriority = NSPW_DATA_PROPDATA(data.Model).Priority
 			TargetEnt = Entity(i)
 			--print("城镇交替")
-			PropData = NSPW_DATA_PROPDATA[data.Model]
+			PropData = NSPW_DATA_PROPDATA(data.Model)
 
 		end
 
@@ -192,13 +194,13 @@ function TOOL:LeftClick( tr )
 	duplicator.SetLocalPos(vector_origin)
 	duplicator.SetLocalAng(angle_zero)
 	
-	local RPropData = NSPW_DATA_PROPDATA[TargetEnt]
+	local RPropData = NSPW_DATA_PROPDATA(TargetEnt)
 
 	for ent,_ in pairs(Dupe) do 
 
 		if !IsValid(ent) or ent == TargetEnt then continue end
 
-		local PropData = NSPW_DATA_PROPDATA[ent] or {}
+		local PropData = NSPW_DATA_PROPDATA(ent) or {}
 		RPropData.Magsize = RPropData.Magsize + (PropData.Magsize or 0)
 
 		RPropData.ReloadSpeedMul = RPropData.ReloadSpeedMul * (PropData.ReloadSpeedMul or 1)
@@ -254,6 +256,8 @@ end
 -- This function/hook is called when the player presses their right click
 function TOOL:RightClick( tr )
 
+	if CLIENT then return true end
+
 	if CLIENT then
 		net.Start("NSPW_TransLambdaPlayerWeaponsMessage")
 			net.WriteUInt(0,5)
@@ -265,8 +269,6 @@ end
 
 -- This function/hook is called when the player presses their reload key
 function TOOL:Reload( trace )
-	-- The SWEP doesn't reload so this does nothing :(
-	Msg( "RELOAD\n" )
 end
 
 -- This function/hook is called every frame on client and every tick on the server

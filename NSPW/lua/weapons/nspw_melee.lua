@@ -15,7 +15,29 @@
 
 AddCSLuaFile()
 
+local GameIsSP = game.SinglePlayer() --他们来了,他们去了,你想的那个人永远不会来到
+
 local DebugMessageDraw = !true
+
+--这里不会对它做变动所以直接拿原来的
+--我知道这么做肯定会减兼容性,这没办法(就像Arc9对INVSYS那样,虽然他们没义务这么做)
+--但是如果不这么整你将不能拿起你亲爱的探鬼仪然后把它们轮到GM13 Construct的鬼的脸上
+
+--该值用于处理一些修改过Metatable的实体
+--至于值不同步... 别问我
+local EntMeta = FindMetaTable("Entity")
+--给客户端用的,或许也有其他地方能用
+local ModEntMeta = table.Copy(EntMeta)
+local LOCALVAL_POS,LOCALVAL_ANG = Vector(),Angle()
+function ModEntMeta:GetPos()
+	return LOCALVAL_POS
+end
+function ModEntMeta:LocalToWorld(Vec)
+	return LOCALVAL_POS
+end
+function ModEntMeta:GetAngles()
+	return LOCALVAL_ANG
+end
 
 local function DebugMessage(...)
 
@@ -327,6 +349,10 @@ if SERVER then
 
 	SWEP.NeedPump = false
 
+else
+
+	SWEP.NextRequestData = 0
+
 end
 
 --科技原件丢了
@@ -412,11 +438,11 @@ function SWEP:Initialize()
 	self.Initialized = true
 	self:SetHoldType("melee")
 
-	local DefineTable = {
-		HoldType = "melee",
+	local DefineTable = { --这玩意有意义?
+		--[[HoldType = "melee",
 		WireIO_E2List = {},
 		WireIO_ShouldAttack = true,
-		WireIO_ShouldBlock = true,
+		WireIO_ShouldBlock = true,]]
 	}
 	if SERVER then
 		DefineTable = {
@@ -532,7 +558,7 @@ if SERVER then
 			--print(owner:GetPoseParameterName(3))
 		if self.DupeDataC:GetParent() != owner then
 
-			local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
+			local PropData = NSPW_DATA_PROPDATA(self.DupeDataC) or {}
 			--BAng.p = 0
 			--困扰撒蜜蜂114514年的bug-1
 			local FPos,FAng = LocalToWorld(DPos, DAng+Angle(0,0,180),BPos,owner:EyeAngles())
@@ -546,19 +572,31 @@ if SERVER then
 		end
 			--self.DupeDataC:SetAngles(DAng)
 
+		--一些东西早就有了
 		for ent,data in pairs(self.DupeData) do
 
 			if !IsValid(ent) then continue end
+
+			--print("?")
+			--[[if !ent.NSPW_PROP_MOVETYPE then
+				ent.NSPW_PROP_MOVETYPE = EntMeta.GetMoveType(ent)
+			end]]
 
 
 			local pobj = ent:GetPhysicsObject()
 
 			if IsValid(pobj) then
-				pobj:EnableMotion(false)
 				--pobj:EnableCollisions(false)
-				pobj:SetPos(ent:GetPos()) --防止位置出问题
-				pobj:SetAngles(ent:GetAngles()) --防止角度出问题
-				pobj:Sleep()
+				if ent.NSPW_PROP_NOCONSTRAINT then
+					pobj:EnableMotion(true)
+					pobj:Wake()
+					--print(ent)
+				else
+					pobj:EnableMotion(false)
+					pobj:SetPos(ent:GetPos()) --防止位置出问题
+					pobj:SetAngles(ent:GetAngles()) --防止角度出问题
+					pobj:Sleep()
+				end
 			end
 
 			if !ent.NSPW_PROP_MYPARENT then
@@ -571,7 +609,7 @@ if SERVER then
 			--local NewPos = Pos-DPos
 			--NewPos:Rotate(DAng)
 
-			if ent != self.DupeDataC and ent:GetParent() != self.DupeDataC then
+			if ent != self.DupeDataC and EntMeta.GetParent(ent) != self.DupeDataC and !ent.NSPW_PROP_NOCONSTRAINT then
 				--print("CALL")
 				--[[local FPos,FAng = LocalToWorld(
 					Pos,
@@ -581,15 +619,22 @@ if SERVER then
 				)
 				ent:SetPos(FPos)
 				ent:SetAngles(FAng)]]
-				ent:SetParent(self.DupeDataC)
-				ent:SetLocalPos(Pos)
-				ent:SetLocalAngles(Ang)
+				--print("WAITWUT?")
+				EntMeta.SetParent(ent,self.DupeDataC)
+				EntMeta.SetLocalPos(ent,Pos)
+				EntMeta.SetLocalAngles(ent,Ang)
+				--print(ent)
 				--ent:SetPos(Pos)
 				--ent:SetAngles(Ang)
 				--ent:SetAngles(Ang-BAng)
+			elseif ent.NSPW_PROP_NOCONSTRAINT then
+				EntMeta.SetParent(ent,ent.NSPW_PROP_MYPARENT)
+				--print(ent:GetMoveParent())
 			end
 
-			ent:SetCollisionGroup(COLLISION_GROUP_DEBRIS)
+			--if !ent.NSPW_PROP_NOCONSTRAINT then
+				EntMeta.SetCollisionGroup(ent,COLLISION_GROUP_DEBRIS)
+			--end
 			ent:SetCustomCollisionCheck(true)
 
 			ent:SetNWVector("NSPW_PROP_NW_POS",ent:GetPos())
@@ -677,7 +722,7 @@ if SERVER then
 
 				Hit = true
 
-				local PropData = NSPW_DATA_PROPDATA[ent] or {}
+				local PropData = NSPW_DATA_PROPDATA(ent) or {}
 
 				local dmgmod = PropData.AttackDamageModify or 0
 				local random = PropData.AttackDamageModifyOffset or 0
@@ -706,7 +751,7 @@ if SERVER then
 				Dmginfo:SetDamagePosition(tr.HitPos)
 				Dmginfo:SetInflictor(ent)
 				Dmginfo:SetAttacker(owner)
-				tr.Entity:TakeDamageInfo(Dmginfo)
+				EntMeta.TakeDamageInfo(tr.Entity,Dmginfo)
 				self.Attacked[#self.Attacked+1] = tr.Entity
 
 				if !ent.NSPW_MeleeHitTriggered then
@@ -746,7 +791,7 @@ if SERVER then
 
 	function SWEP:ThinkHandleGun(owner)
 
-		local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
+		local PropData = NSPW_DATA_PROPDATA(self.DupeDataC) or {}
 
 		if !self.DupeDataC.NSPW_GUNCLIP1 then
 			self.DupeDataC.NSPW_GUNCLIP1 = PropData.Magsize
@@ -761,7 +806,7 @@ if SERVER then
 		
 			if !IsValid(ent) or ent == self.DupeDataC then continue end
 
-			local PropData = NSPW_DATA_PROPDATA[ent] or {}
+			local PropData = NSPW_DATA_PROPDATA(ent) or {}
 			magsize = magsize + (PropData.Magsize or 0)
 
 		end
@@ -774,7 +819,7 @@ if SERVER then
 			local dist = owner:GetPos():DistToSqr(owner:GetEnemy():GetPos())
 			--print(self.MeleeAttacking)
 			if self.HoldType == "shotgun" and dist > 250000  then
-				owner:SetCondition(COND.TOO_FAR_TO_ATTACK)
+				owner:SetCondition(39)
 				--owner:SetSchedule(SCHED_MOVE_TO_WEAPON_RANGE)
 			elseif dist <= 4900 and !owner:IsCurrentSchedule(SCHED_MELEE_ATTACK1) and owner:SelectWeightedSequence(ACT_MELEE_ATTACK1) != - 1 then
 				--[[local oldht = self.HoldType
@@ -789,7 +834,7 @@ if SERVER then
 					SelectedSequence = owner:SelectWeightedSequence(ACT_MELEE_ATTACK_SWING)
 					--print(owner:GetSequenceName(SelectedSequence))
 					--self:SetHoldType(old)
-					--print("?")
+					
 				end
 
 				--print("AA")
@@ -825,7 +870,7 @@ if SERVER then
 	function SWEP:ThinkHandleGunReload(owner)
 
 		local MyStyle = self:GetStyleData()
-		local PropData = NSPW_DATA_PROPDATA[self.DupeDataC]
+		local PropData = NSPW_DATA_PROPDATA(self.DupeDataC)
 
 		local Mul = 1
 
@@ -837,7 +882,7 @@ if SERVER then
 		
 			if !IsValid(ent) then continue end
 
-			local PropData = NSPW_DATA_PROPDATA[ent] or {}
+			local PropData = NSPW_DATA_PROPDATA(ent) or {}
 			Mul = Mul / (PropData.ReloadSpeedMul or 1)
 			Mul = Mul + (PropData.ReloadSpeedMulOffset or 0)
 
@@ -887,7 +932,7 @@ if SERVER then
 
 					if !IsValid(ent) or ent == self.DupeDataC then continue end
 
-					local PropData = NSPW_DATA_PROPDATA[ent] or {}
+					local PropData = NSPW_DATA_PROPDATA(ent) or {}
 					magsize = magsize + (PropData.Magsize or 0)
 
 				end
@@ -907,7 +952,7 @@ if SERVER then
 							self.ReloadStage = 2
 							self.NeedPump = false 
 							self:SetNextPrimaryFire(CurTime()+1.5)
-							--print("?")
+							
 						else
 							self.InReload = false
 							self:SetNextPrimaryFire(CurTime()+0.5)
@@ -922,7 +967,7 @@ if SERVER then
 
 				elseif self.ReloadStage == 1 then
 
-					--print("?")
+					
 					local ac = self.MarkedAsLambdaWep and 9999 or owner:GetAmmoCount(PropData.AmmoType or "pistol")
 					if ac <= 0 then 
 						self:SetBlocking(false) 
@@ -959,7 +1004,7 @@ if SERVER then
 						owner:EmitSound(PropData.PumpSound or "weapons/m3/m3_pump.wav",55)
 
 					end
-					--print("?")
+					
 					self.InReload = false
 					self.NeedPump = false
 
@@ -990,7 +1035,7 @@ if SERVER then
 			
 					if !IsValid(ent) then continue end
 
-					local PropData = NSPW_DATA_PROPDATA[ent] or {}
+					local PropData = NSPW_DATA_PROPDATA(ent) or {}
 					local TargetVal = PropData.ReloadEvent_Start
 
 					if TargetVal then
@@ -1016,7 +1061,7 @@ if SERVER then
 			
 						if !IsValid(ent) then continue end
 
-						local PropData = NSPW_DATA_PROPDATA[ent] or {}
+						local PropData = NSPW_DATA_PROPDATA(ent) or {}
 						local TargetVal = PropData.ReloadEvent_ClipOut
 
 						if TargetVal then
@@ -1040,7 +1085,7 @@ if SERVER then
 			
 						if !IsValid(ent) then continue end
 
-						local PropData = NSPW_DATA_PROPDATA[ent] or {}
+						local PropData = NSPW_DATA_PROPDATA(ent) or {}
 						local TargetVal = PropData.ReloadEvent_ChangeClip
 
 						if TargetVal then
@@ -1065,7 +1110,7 @@ if SERVER then
 			
 						if !IsValid(ent) then continue end
 
-						local PropData = NSPW_DATA_PROPDATA[ent] or {}
+						local PropData = NSPW_DATA_PROPDATA(ent) or {}
 						local TargetVal = PropData.ReloadEvent_ClipIn
 
 						if TargetVal then
@@ -1090,7 +1135,7 @@ if SERVER then
 			
 						if !IsValid(ent) then continue end
 
-						local PropData = NSPW_DATA_PROPDATA[ent] or {}
+						local PropData = NSPW_DATA_PROPDATA(ent) or {}
 						local TargetVal = PropData.ReloadEvent_LoadGun
 
 						if TargetVal then
@@ -1118,7 +1163,7 @@ if SERVER then
 
 						if !IsValid(ent) or ent == self.DupeDataC then continue end
 
-						local PropData = NSPW_DATA_PROPDATA[ent] or {}
+						local PropData = NSPW_DATA_PROPDATA(ent) or {}
 						magsize = magsize + (PropData.Magsize or 0)
 
 						local TargetVal = PropData.ReloadEvent_End
@@ -1166,7 +1211,7 @@ if SERVER then
 
 		local MyStyle = self:GetStyleData()
 
-		local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
+		local PropData = NSPW_DATA_PROPDATA(self.DupeDataC) or {}
 
 		if (self.MarkedAsLambdaWep or !owner:KeyDown(IN_USE)) and !self:GetBlocking() and MyStyle.IsGun and PropData.IsGun and self:Clip1() < self:GetMaxClip1() and !self.InReload then
 
@@ -1191,7 +1236,7 @@ if SERVER then
 
 		end
 
-		if game.SinglePlayer() then
+		if GameIsSP then
 			self:CallOnClient("Reload")
 		end
 
@@ -1202,16 +1247,16 @@ if SERVER then
 
 	function SWEP:Swing(owner,PropData,MyStyle)
 
-		--local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
+		--local PropData = NSPW_DATA_PROPDATA(self.DupeDataC) or {}
 		local time = 0.1
 
 		if owner:IsPlayer() then owner:DoAttackEvent() end
 		self:CallOnClient("DoAttackEvent")
 
-		timer.Simple(MyStyle.AttackVM,function()
-			if !IsValid(self) then return end
+		--timer.Simple(MyStyle.AttackVM,function()
+			--if !IsValid(self) then return end
 			self:SendWeaponAnim(ACT_VM_MISSCENTER)
-		end)
+		--end)
 
 		owner:EmitSound("weapons/slam/throw.wav",75,math.random(90,140))
 
@@ -1219,7 +1264,7 @@ if SERVER then
 
 			if !IsValid(ent) then continue end
 
-			local PropData = NSPW_DATA_PROPDATA[ent] or {}
+			local PropData = NSPW_DATA_PROPDATA(ent) or {}
 
 			time = time + (PropData.AttackTimeModify or 0)
 
@@ -1315,8 +1360,104 @@ else
 		
 
 		NSPW_SettingMenu = f
-		--print("?")
 		
+		
+
+	end
+
+	function SWEP:GenerateName()
+
+		local FinalName = "Prop"
+		local Count = 0
+
+		for _,_ in pairs(self.DupeData) do
+			Count = Count + 1
+		end
+
+		--print(Count)
+
+		return FinalName
+
+	end
+	function SWEP:DrawWeaponSelection( x, y, wide, tall, alpha )
+	
+		do return end
+
+		if self.Removing or !IsValid(self.DupeDataC) or !self.VMRendered or !self.DataSynced then return end
+
+		--cam.Start2D()
+		--wide,tall = ScrW(),ScrH()
+		local Vec,Ang = Vector(
+			-math.abs(self.NSPW_DrawSize[3]),
+			math.abs(self.NSPW_DrawSize[1]),
+			math.abs(self.NSPW_DrawSize[2])),
+			Angle(0,0,0)
+		--print(self.NSPW_DrawSize[1]*self.NSPW_DrawSize[2])
+		Ang[self.NSPW_DrawAxis or "x"] = 90
+		Vec:Rotate(Ang)
+
+		cam.Start3D(Vec,Ang,80,x,y,wide,tall)
+
+			render.SuppressEngineLighting( true )
+			render.SetLightingOrigin( self.DupeDataC:GetPos() )
+			render.ResetModelLighting( 1,1,1 )
+			render.SetColorModulation( 1,1,1 )
+			render.SetBlend( 1 ) -- * surface.GetAlphaMultiplier()
+
+			render.SetScissorRect( x,y,x+wide,y+tall, true )
+
+			for ent,data in pairs(self.DupeData) do
+
+				if !IsValid(ent) then continue end
+
+				local OldRO = ent.RenderOverride
+
+				ent.RenderOverride = nil
+			
+				local OldPos,OldAng = ent:GetRenderOrigin(),ent:GetRenderAngles()
+
+				ent:SetRenderOrigin(data.Pos)
+				ent:SetRenderAngles(data.Ang)
+				ent:SetupBones()
+				ent:DrawModel()
+
+				ent.RenderOverride = OldRO
+
+				ent:SetRenderOrigin(OldPos)
+				ent:SetRenderAngles(OldAng)
+				ent:SetupBones()
+				ent:DrawModel()
+			end
+
+			render.SetScissorRect( 0, 0, 0, 0, false )
+
+			render.SuppressEngineLighting( false )
+
+		cam.End3D()
+		
+		--cam.Start2D()
+		--print("?")
+		-- Set us up the texture
+		--surface.SetDrawColor( 255, 255, 255, alpha )
+		--surface.SetTexture( self.WepSelectIcon )
+--
+		---- Lets get a sin wave to make it bounce
+		--local fsin = 0
+--
+		--if ( self.BounceWeaponIcon == true ) then
+		--	fsin = math.sin( CurTime() * 10 ) * 5
+		--end
+--
+		---- Borders
+		--y = y + 10
+		--x = x + 10
+		--wide = wide - 20
+
+		-- Draw that mother
+		--surface.DrawTexturedRect( x + (fsin), y - (fsin),  wide-fsin*2 , ( wide / 2 ) + (fsin) )
+
+		-- Draw weapon info box
+		--self:PrintWeaponInfo( x + wide + 20, y + tall * 0.95, alpha )
 
 	end
 
@@ -1350,9 +1491,11 @@ function SWEP:Think()
 
 	--self:SetWeaponHoldType("melee")
 
-	--print("?")
+	
 
 	--print("RRRR")
+
+	if self.Removing then return end
 
 	if SERVER then
 
@@ -1370,14 +1513,14 @@ function SWEP:Think()
 
 		local MyStyle = self:GetStyleData()
 
-		local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
+		local PropData = NSPW_DATA_PROPDATA(self.DupeDataC) or {}
 
 		local Total = 0
 		for ent,_ in pairs(self.DupeData or {}) do
 
 			if !IsValid(ent) then continue end
 
-			local PropData = NSPW_DATA_PROPDATA[ent] or {}
+			local PropData = NSPW_DATA_PROPDATA(ent) or {}
 			if PropData.Automatic != nil then
 
 				if PropData.Automatic then
@@ -1408,7 +1551,7 @@ function SWEP:Think()
 			if owner:IsNPC() and (owner:IsCurrentSchedule(SCHED_MELEE_ATTACK1) or self.MeleeAttacking) then
 				self:ThinkHandleAttack(owner)
 			end
-			--print("?")
+			
 		else
 			self.Primary.Automatic = true
 			self.Primary.Ammo = "none"
@@ -1446,31 +1589,44 @@ function SWEP:Think()
 
 		end
 		--self:SetNextThink(0)
-		--print("?")
+		
 
 		--[[if !MyStyle.HolsterPrevVM then
-			--print("?")
+			
 		end]]
 
 		return true
 
 	else
 
+		--print(self.DupeData)
 		--self:ManipulateBonePosition(0,Vector(-10,0,0))
 
+		if !self.DupeDataInitialized or !self.DupeData or !self.DupeDataC then
+			if self.NextRequestData <= 0 then
+				--self.DupeData = {}
+				net.Start("NSPW_TransPropTableMessage")
+					net.WriteEntity(self)
+				net.SendToServer()
+				self.NextRequestData = 3
+				
+			else
+				self.NextRequestData = self.NextRequestData - FrameTime()
+			end
+		end
 		if !self.DupeDataInitialized or !IsValid(self.DupeDataC) or !owner:IsPlayer() then return end
 
 		local vm = owner:GetViewModel()
 		local block = self:GetBlocking()
 		--[[if IsValid(vm) then
 
-			--print("?")
+			
 
 		end]]
 
 		local MyStyle = self:GetStyleData()
 
-		local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
+		local PropData = NSPW_DATA_PROPDATA(self.DupeDataC) or {}
 		--print(self.DupeDataC:GetModel())
 
 		--self:ThinkHandlePropPosition(owner)
@@ -1482,14 +1638,6 @@ function SWEP:Think()
 			self.Primary.Automatic = true
 			self.Primary.Ammo = "none"
 			self.Secondary.Ammo = "none"
-		end
-
-		if !self.DupeDataInitialized or !self.DupeData or !self.DupeDataC then
-			--self.DupeData = {}
-			net.Start("NSPW_TransPropTableMessage")
-				net.WriteEntity(self)
-			net.SendToServer()
-			--print("?")
 		end
 
 		self:SetNextClientThink(CurTime())
@@ -1512,6 +1660,8 @@ end
 local WhiteList = {
 	["NSPW_GUNCLIP1"] = true,
 	["NSPW_GUNCLIP2"] = true,
+	["NSPW_PROP_NOCONSTRAINT"] = true,
+	["NSPW_PROP_PROPDATA"] = true,
 }
 
 function SWEP:DropMySelf()
@@ -1520,13 +1670,16 @@ function SWEP:DropMySelf()
 
 	self.Removing = true
 
+	--self:Holster()
+
 	if SERVER then
 
 		if !IsValid(self.DupeDataC) then return end
 
+
 		self.DupeDataC:FollowBone(NULL,0)
 		self.DupeDataC:SetCustomCollisionCheck(self.DupeDataC.NSPW_PROP_OLDCOLLISIONCHECK)
-		self.DupeDataC:SetCollisionGroup(self.DupeDataC.NSPW_PROP_OLDCOLLISIONGROUP or 0)
+		EntMeta.SetCollisionGroup(self.DupeDataC,self.DupeDataC.NSPW_PROP_OLDCOLLISIONGROUP or 0)
 		--print(self.DupeDataC.NSPW_PROP_OLDCOLLISIONGROUP,COLLISION_GROUP_IN_VEHICLE)
 		for i,_ in pairs(self.DupeDataC:GetTable()) do
 				
@@ -1550,22 +1703,52 @@ function SWEP:DropMySelf()
 		
 
 		for ent,data in pairs(self.DupeData or {}) do
-			--print("?")
+			
 			if IsValid(ent) then
 				ent:SetNoDraw(ent.NSPW_PROP_SV_NODRAW)
+				--EntMeta.SetTransmitWithParent(ent,ent.NSPW_PROP_TRANSMITWITHPARENT)
+
+				--EntMeta.SetMoveType(ent,ent.NSPW_PROP_MOVETYPE or MOVETYPE_VPHYSICS)
+
 			end
+			--ent:SetMoveParent(ent)
 			if IsValid(ent) and ent != self.DupeDataC and ent.NSPW_PROP_OLDCOLLISIONGROUP then 
-				ent:FollowBone(NULL,0)
-				--print(ent,ent.NSPW_PROP_MYPARENT)
-				ent:SetCustomCollisionCheck(ent.NSPW_PROP_OLDCOLLISIONCHECK)
-				ent:SetCollisionGroup(ent.NSPW_PROP_OLDCOLLISIONGROUP)
-				ent:SetParent(ent.NSPW_PROP_MYPARENT or NULL)
-				ent:SetLocalPos(data.Pos)
-				ent:SetLocalAngles(data.Angle)
+				--print("IM TRIGGERED")
 
 				--print(ent,ent.NSPW_PROP_MYPARENT)
+
+				local oldparent = ent.NSPW_PROP_MYPARENT
+
+
+				ent:SetCustomCollisionCheck(ent.NSPW_PROP_OLDCOLLISIONCHECK)
+				EntMeta.SetCollisionGroup(ent,ent.NSPW_PROP_OLDCOLLISIONGROUP)
+
+				local REF = self.DupeData[IsValid(oldparent) and oldparent or self.DupeDataC]
+				local pos,ang = WorldToLocal(data.Pos,data.Angle,REF.Pos,REF.Angle)
+				--[[if IsValid(oldparent) and oldparent != ent then
+					pos = oldparent:WorldToLocal(pos)
+					ang = oldparent:WorldToLocalAngles(ang)
+				end]]
+
+				--local Bone = owner:LookupBone("ValveBiped.Bip01_R_Hand") or 0
+
+				--EntMeta.FollowBone(ent,owner, Bone)
+
+
+				EntMeta.FollowBone(ent,NULL,-1)
+
+				EntMeta.SetParent(ent,oldparent or NULL)
+				
+				EntMeta.SetLocalPos(ent,pos)
+				EntMeta.SetLocalAngles(ent,ang)
+				--print(oldparent)
+
+				--print(ent,ent.NSPW_PROP_MYPARENT)
+				--print(ent:GetParent(),ent:GetMoveParent(),ent:GetMoveType(),ent.NSPW_PROP_OLDCOLLISIONCHECK,ent.NSPW_PROP_OLDCOLLISIONGROUP)
 
 				for i,_ in pairs(ent:GetTable()) do
+
+					if WhiteList[i] then continue end
 
 					if string.StartWith(i, "NSPW_") then
 
@@ -1593,16 +1776,36 @@ function SWEP:DropMySelf()
 
 			if !IsValid(ent) then continue end
 
+			--self:DrawWorldModel()
+			--hook.Run("NotifyShouldTransmit", ent,ent.NSPW_PROP_CL_PREDICTABLE or false)
+			--print(ent.NSPW_PROP_CL_PREDICTABLE)
+
+			--重置,不然显示Bug
+			--ent:SetPos(ent.NSPW_PROP_CL_Origin) --虫豸
+			ent:SetNoDraw(false)
+
 			ent:SetRenderOrigin(nil)
 			ent:SetRenderAngles(nil)
 
-			ent:SetNoDraw(false)
 
 			if ent.NSPW_PROP_CL_RENDEROVERRIDESETTED then
 				ent.RenderOverride = ent.NSPW_PROP_CL_RENDEROVERRIDE
 				ent.NSPW_PROP_CL_RENDEROVERRIDE = nil
 				ent.NSPW_PROP_CL_RENDEROVERRIDESETTED = nil
 			end
+
+			EntMeta.DrawModel(ent)
+
+			EntMeta.SetPredictable(ent,ent.NSPW_PROP_CL_PREDICTABLE or false)
+			--EntMeta.FollowBone(ent,NULL,-1)
+			--EntMeta.SetParent(ent,NULL)
+
+
+
+			ent.NSPW_PROP_CL_PREDICTABLE = nil
+			--ent:SetCollisionGroup(0)
+
+			--print(ent:GetCollisionGroup())
 
 		end
 
@@ -1625,7 +1828,7 @@ function SWEP:PreDrawViewModel(vm)
 
 	local ht = self:GetHoldType()
 	local MyStyle = Style[ht] or {}
-	local PropData = NSPW_DATA_PROPDATA[self.DupeDataC]
+	local PropData = NSPW_DATA_PROPDATA(self.DupeDataC)
 
 	if !MyStyle.HolsterPrevVM then
 		vm:SetModel(MyStyle.VM or "")
@@ -1702,7 +1905,7 @@ function SWEP:PreDrawViewModel(vm)
 		end
 		for i,data in pairs(MyStyle.BoneManipulatesAnimation or {}) do
 
-			local bi = isnumber(i) and i or vm:LookupBone(i) 
+			local bi = isnumber(i) and i or vm:LookupBone(i) or -1
 
 			if bi <= 0 then continue end
 
@@ -1716,7 +1919,9 @@ function SWEP:PreDrawViewModel(vm)
 			
 			if !IsValid(ent) then continue end
 
-			local PropData = NSPW_DATA_PROPDATA[ent] or {}
+			local PropData = NSPW_DATA_PROPDATA(ent) or {}
+
+			if !PropData then PropData = {} end
 			
 			local BMA = MyStyle.DoubleHand and PropData.BoneManipulatesAnimation or PropData.BoneManipulatesAnimationPistol
 			local BM = MyStyle.DoubleHand and PropData.BoneManipulates or PropData.BoneManipulatesPistol
@@ -1771,7 +1976,7 @@ function SWEP:PreDrawViewModel(vm)
 		--其实我想表述的是LerpVector和LerpAngle不像Lerp那样有限制
 
 		self.LastAim = math.min(1,math.max(self.LastAim,0))
-
+		--print(PropData)
 		vm:ManipulateBonePosition(0,self:GetManipulateBonePosition(0) + LerpVector(
 			self.LastAim,
 			Vector(0,0,0),
@@ -1817,7 +2022,7 @@ function SWEP:PreDrawViewModel(vm)
 			
 				if !IsValid(ent) then continue end
 
-				local PropData = NSPW_DATA_PROPDATA[ent] or {}
+				local PropData = NSPW_DATA_PROPDATA(ent) or {}
 				Mul = Mul / (PropData.ReloadSpeedMul or 1)
 				Mul = Mul + (PropData.ReloadSpeedMulOffset or 0)
 
@@ -1845,7 +2050,7 @@ function SWEP:PreDrawViewModel(vm)
 			
 				if !IsValid(ent) then continue end
 
-				local PropData = NSPW_DATA_PROPDATA[ent] or {}
+				local PropData = NSPW_DATA_PROPDATA(ent) or {}
 				Mul = Mul / (PropData.ReloadSpeedMul or 1)
 				Mul = Mul + (PropData.ReloadSpeedMulOffset or 0)
 
@@ -1862,7 +2067,7 @@ function SWEP:PreDrawViewModel(vm)
 				self.InAnimation = false
 				vm:SetupBones()
 				--vm:ResetSequence()
-				--print("?")
+				
 			end
 		end
 	else
@@ -1917,6 +2122,15 @@ function SWEP:PostDrawViewModel(draw)
 	--print("我真的在画")
 	if !draw or self.Removing then return end
 
+	--[[ed = EffectData()
+						ed:SetAttachment(1)
+						ed:SetAngles(Angle())
+						ed:SetOrigin(self.DupeDataC:GetPos())
+						ed:SetFlags(1)
+
+						ed:SetEntity(self.DupeDataC)
+						util.Effect("MuzzleFlash",ed)]]
+
 	--print("热修复还活着")
 	if !IsValid(self.DupeDataC) then
 		self:RequestPropInfo()
@@ -1930,7 +2144,8 @@ function SWEP:PostDrawViewModel(draw)
 		print(vm:GetBoneName(i))
 	end]]
 	--v_weapon.Knife_Handle
-	local mtx = vm:GetBoneMatrix(vm:LookupBone("ValveBiped.Bip01_R_Hand"))
+	--vm:SetupBones()
+	local mtx = vm:GetBoneMatrix(vm:LookupBone("ValveBiped.Bip01_R_Hand") or 0)
 
 	if !mtx then return end
 
@@ -1947,6 +2162,8 @@ function SWEP:PostDrawViewModel(draw)
 
 		if !IsValid(ent) then continue end
 		
+		--local old = EntMeta.GetPredictable(ent)
+		--EntMeta.SetPredictable(ent,true)
 		
 		ent:SetNoDraw(true)
 
@@ -1955,8 +2172,8 @@ function SWEP:PostDrawViewModel(draw)
 			ent.NSPW_PROP_CL_RENDEROVERRIDE = ent.RenderOverride
 			--ent.RenderOverride = function(self) self:DrawShadow(false) end
 		end
-		ent:SetRenderOrigin(nil)
-		ent:SetRenderAngles(nil)
+		EntMeta.SetRenderOrigin(ent,nil)
+		EntMeta.SetRenderAngles(ent,nil)
 
 		--print(ent:GetPos(),ent:GetAngles())
 		--ent:SetupBones()
@@ -1973,10 +2190,10 @@ function SWEP:PostDrawViewModel(draw)
 		function NewMeta:__index(key,...)
 			--print(key)
 			--[[if key == "GetPos" then
-				--print("?")
+				
 				return NewMeta[key]
 			elseif key == "GetAngles" then
-				--print("?")
+				
 				return NewMeta[key]
 			end
 			if NewMeta[key] then return NewMeta[key] end
@@ -1986,12 +2203,25 @@ function SWEP:PostDrawViewModel(draw)
 		debug.setmetatable(ent, NewMeta)]]
 
 		local MyStyle = self:GetStyleData()
+		local mtxpos,mtxang = omtx:GetTranslation(),omtx:GetAngles()
 
-		local OPos,OAng = LocalToWorld((MyStyle.VMPropOffsetPos or Vector()),(MyStyle.VMPropOffsetAng or Angle()),omtx:GetTranslation(),omtx:GetAngles())
+		local FPos,FAng
 
-		OPos,OAng = WorldToLocal(ent:GetPos(),ent:GetAngles(),OPos,OAng)
-		local FPos,FAng = LocalToWorld(OPos,OAng,Pos,Ang)
+		if ent:GetNWBool("NSPW_NW_PROP_NOCONSTRAINTFREEDRAW") then
+
+			FPos,FAng = ent:GetPos(),ent:GetAngles()
+
+		else
+
+			local OPos,OAng = LocalToWorld((MyStyle.VMPropOffsetPos or Vector()),(MyStyle.VMPropOffsetAng or Angle()),mtxpos,mtxang)
+
+			OPos,OAng = WorldToLocal(ent:GetPos(),ent:GetAngles(),OPos,OAng)
+			FPos,FAng = LocalToWorld(OPos,OAng,Pos,Ang)
+
+		end
 --
+		ent.NSPW_PROP_CL_DrawOrigin = FPos
+		ent.NSPW_PROP_CL_DrawAngle = FAng
 		--OAng.z = -OAng.z
 		--print(OPos)
 		--[[ent:AddEffects(EF_FOLLOWBONE)
@@ -2007,28 +2237,27 @@ function SWEP:PostDrawViewModel(draw)
 		
 		--ent:SetNetworkOrigin(FPos)
 		--ent:SetRender
-		ent:SetRenderOrigin(FPos)
-		ent:SetRenderAngles(FAng)
+		EntMeta.SetRenderOrigin(ent,FPos)
+		EntMeta.SetRenderAngles(ent,FAng)
 		ent.RenderOverride = function(self) 
 			self:DestroyShadow()
+			--EntMeta.SetRenderOrigin(ent,FPos)
+			--EntMeta.SetRenderAngles(ent,FAng)
 
-			self:SetupBones()
 			--self:SetPos(FPos)
 			--self:SetAngles(FAng)
+			--EntMeta.SetupBones(self)
 			--self:SetPos(self:GetRenderOrigin())
 			--print("SUS")
 			--self:SetPos(FPos)
 			--self:SetAngles(FAng)
-			
-			--if isfunction(self.Draw) then
-				--self:Draw()
-			--else
-				self:DrawModel()
-			--end
+			--self:SetPredictable(true)
+			EntMeta.DrawModel(self)
+			--self:SetPredictable(false)
 			--self:DrawModel()
 
-			--self:SetPos(self.NSPW_PROP_CL_OFFSETPOS)
-			--self:SetAngles(self.NSPW_PROP_CL_OFFSETANG)
+			--self:SetPos(self.NSPW_PROP_CL_Origin)
+			--self:SetAngles(self.NSPW_PROP_CL_Angle)
 
 			--print(ent:GetBoneMatrix(0))
 		end
@@ -2044,24 +2273,47 @@ function SWEP:PostDrawViewModel(draw)
 		--ent:SetupBones()
 		local c = ent:GetColor()
 		render.SetColorModulation(c.r/255,c.g/255,c.b/255)
-		if isfunction(ent.Draw) then
-			
-			--local BPos,BAng = ent:GetPos(),ent:GetAngles()
-			ent:SetPos(FPos)
-			ent:SetAngles(FAng)
 
-			ent:SetupBones()
+		if isfunction(ent.Draw) and ent.SetPos == EntMeta.SetPos then
+			--EntMeta.SetPredictable(ent,true)
+			--EntMeta.DrawModel(ent)
+			--EntMeta.SetPos(ent,FPos)
+			--EntMeta.SetAngles(ent,FAng)
+
+			EntMeta.SetPos(ent,FPos)
+			EntMeta.SetAngles(ent,FAng)
+			EntMeta.SetupBones(ent)
+			--EntMeta.SetRenderOrigin(ent,FPos)
+			--EntMeta.SetRenderAngles(ent,FAng)
 			ent:Draw()
+			--print("?")
+			--LOCALVAL_ANG = FAng
+			--LOCALVAL_POS = FPos
+			--debug.setmetatable(ent,ModEntMeta)
+			--EntMeta.SetupBones(ent)
 
-			ent:SetPos(ent.NSPW_PROP_CL_Origin)
-			ent:SetAngles(ent.NSPW_PROP_CL_Angle)
-			--ent:SetPos(BPos)
-			--ent:SetAngles(BAng)
-			ent:SetupBones()
+			EntMeta.SetPos(ent,ent.NSPW_PROP_CL_Origin)
+			EntMeta.SetAngles(ent,ent.NSPW_PROP_CL_Angle)
+			EntMeta.SetupBones(ent)
 
+			--EntMeta.DrawModel(ent,STUDIO_NOSHADOWS)
+			--ent.RenderOverride = function(self) self:DrawModel end
+			--hook.Run("PreDrawOpaqueRenderables")
+			--hook.Run("PostDrawOpaqueRenderables")
+
+			--debug.setmetatable(ent,EntMeta)
 		else
-			ent:DrawModel()
+			--ent:SetPos(ent.NSPW_PROP_CL_Origin)
+			--ent:SetAngles(ent.NSPW_PROP_CL_Angle)
+			EntMeta.SetupBones(ent)
+			EntMeta.DrawModel(ent)
 		end
+		--PAC3采用CLModel
+		--hook.Run("PostDrawOpaqueRenderables")
+		--hook.Run("PostDrawTranslucentRenderables")
+			--EntMeta.SetupBones(ent)
+			--ent:Draw()
+	
 		--ent:SetupBones()
 		--ent:SetupBones()
 
@@ -2071,14 +2323,23 @@ function SWEP:PostDrawViewModel(draw)
 		--debug.setmetatable(ent, OldMeta)
 		--ent:GetDrawShadow(false)
 		ent.RenderOverride = function(self) 
+			--EntMeta.SetRenderOrigin(self,FPos)
+			--EntMeta.SetRenderAngles(self,FAng)
+			--EntMeta.DrawModel(self)
 			self:DestroyShadow()
 			self:DrawShadow(false) 
 		end
+		--EntMeta.SetPredictable(ent,false)
+		--EntMeta.SetPredictable(ent,old)
+		--EntMeta.DrawModel(ent)
+		--ent:DrawModel()
 		--self.NSPW_WEP_CLENTS[i]:SetRenderOrigin(FPos)
 		--self.NSPW_WEP_CLENTS[i]:SetRenderAngles(FAng)
 		--self.NSPW_WEP_CLENTS[i]:DrawModel()
+
 		
 		
+		self.VMRendered = true
 		
 
 	end
@@ -2087,7 +2348,7 @@ end
 
 function SWEP:AdjustMouseSensitivity()
 
-	local PropData = NSPW_DATA_PROPDATA[self.DupeDataC]
+	local PropData = NSPW_DATA_PROPDATA(self.DupeDataC)
 
 	if self:GetAiming() then
 		return 0.7 * (PropData.AimMouseSensMul or 1)
@@ -2106,14 +2367,16 @@ function SWEP:RequestPropInfo()
 	end
 	
 	self.NextRequest = 1
-	net.Start("NSPW_TransPropTableMessage",true)
+	--print("你说得对,但是我玩原神,我有权利性侵服务器的交通")
+	net.Start("NSPW_TransPropTableMessage")
 	net.SendToServer()
 
 end
 
 function SWEP:DrawWorldModel()
 
-	--print("?")
+	--do return end
+	
 	
 	if !IsValid(self.DupeDataC) then
 		self:RequestPropInfo()
@@ -2124,6 +2387,10 @@ function SWEP:DrawWorldModel()
 		--local ent = self["GetPropEntity"..i](self)
 
 		if !IsValid(ent) then continue end
+
+		--render.SetMaterial(ent:GetMaterial())
+		local c = ent:GetColor()
+		render.SetColorModulation(c.r/255,c.g/255,c.b/255)
 
 		ent:SetRenderOrigin(nil)
 		ent:SetRenderAngles(nil)
@@ -2136,10 +2403,12 @@ function SWEP:DrawWorldModel()
 			ent.NSPW_PROP_CL_RENDEROVERRIDESETTED = nil
 		end
 
-		--print("?")
+		
 
 		ent:DrawModel()
 		ent:SetNoDraw(true)
+		--self:PreDrawViewModel()
+		--self:PostDrawViewModel()
 		--ent:SetParent(nil)
 
 
@@ -2148,7 +2417,7 @@ function SWEP:DrawWorldModel()
 
 	--别问,问就是尊重实例
 
-	--[[local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
+	--[[local PropData = NSPW_DATA_PROPDATA(self.DupeDataC) or {}
 
 	render.SetColorMaterial()
 
@@ -2172,6 +2441,7 @@ function SWEP:ResetVM()
 	local owner = self:GetOwner()
 	if IsValid(owner) and owner:IsPlayer() then
 		local vm = owner:GetViewModel()
+		if !IsValid(vm) then return end
 		vm:SetMaterial("")
 		for i=0,vm:GetBoneCount()-1 do
 
@@ -2212,6 +2482,10 @@ function SWEP:Deploy()
 	if SERVER then
 
 
+		if GameIsSP then
+			self:CallOnClient("Deploy")
+		end
+
 		self:SetBlocking(false)
 
 		local MyStyle = self:GetStyleData()
@@ -2234,12 +2508,35 @@ function SWEP:Deploy()
 
 			if !IsValid(ent) then continue end
 
+			--EntMeta.FollowBone(ent,NULL,0)
+			--[[if ent.NSPW_PROP_TRANSMITWITHPARENT == nil then
+
+				ent.NSPW_PROP_TRANSMITWITHPARENT = EntMeta.GetTransmitWithParent(ent)
+
+			end]]
+
+			--EntMeta.SetTransmitWithParent(ent,true)
+
+			EntMeta.SetMoveParent(ent,IsValid(ent.NSPW_PROP_MOVEPARENT) and ent.NSPW_PROP_MOVEPARENT or ent)
 			ent:SetNoDraw(ent.NSPW_PROP_SV_NODRAW)
 			
 
 		end
 
 		--self:Think()
+
+	else
+
+		self.PrintName = self:GenerateName()
+
+		--[[for ent,data in pairs(self.DupeData or {}) do
+
+			if !IsValid(ent) then continue end
+
+			--EntMeta.SetPredictable(ent,true)
+
+		end]]
+		
 
 	end
 
@@ -2248,6 +2545,8 @@ function SWEP:Deploy()
 end
 
 function SWEP:Holster()
+
+	if self.Removing then return end
 
 	local owner = self:GetOwner()
 
@@ -2260,13 +2559,25 @@ function SWEP:Holster()
 
 			if !IsValid(ent) then continue end
 
+			ent:FollowBone(NULL,0)
+
+			--EntMeta.SetMoveType(ent,MOVETYPE_NONE)
 			--print("?2")
 
-			ent:FollowBone(NULL,0)
-			--ent:SetMoveParent(owner)
+			if !self.Removing then
+				if !ent.NSPW_PROP_MOVEPARENT then
+					ent.NSPW_PROP_MOVEPARENT = ent:GetMoveParent()
+				end
+				--GetTransmitWithParent()
+				--EntMeta.SetTransmitWithParent(ent,ent.NSPW_PROP_TRANSMITWITHPARENT)
+				EntMeta.SetMoveParent(ent,owner)
+
+				EntMeta.SetLocalPos(ent,data.Pos)
+				EntMeta.SetLocalAngles(ent,data.Angle)
+			end
 			--超高级保险措施! 以后再也不用担心玩家找到了! 因为根本找不到!
-			ent:SetPos(Vector(7000,7000,7000))
-			ent:SetCollisionGroup(COLLISION_GROUP_IN_VEHICLE)
+			--ent:SetPos(Vector(7000,7000,7000))
+			EntMeta.SetCollisionGroup(ent,COLLISION_GROUP_IN_VEHICLE)
 			if ent.NSPW_PROP_SV_NODRAW == nil then
 				ent.NSPW_PROP_SV_NODRAW = ent:GetNoDraw()
 			end
@@ -2280,13 +2591,24 @@ function SWEP:Holster()
 
 		end
 
+		--local ent = self.DupeDataC
+		--EntMeta.SetLocalPos(ent,Vector(0,0,10))
+		--EntMeta.SetAngles(ent,Angle(0,0,0))
+
 	else
+
+		self:DrawWorldModel() --它是世界的(如果不这么做VM有Bug)
 
 		for ent,_ in pairs(self.DupeData or {}) do
 
 			--local ent = self["GetPropEntity"..i](self)
 
 			if !IsValid(ent) then continue end
+
+			--print("CUM")
+			--ent:FollowBone(owner,0)
+
+			--EntMeta.SetPredictable(ent,ent.NSPW_PROP_CL_PREDICTABLE or false)
 
 			ent:SetNoDraw(true)
 
@@ -2309,7 +2631,7 @@ end
 
 function SWEP:TranslateFOV(fov)
 
-	local PropData = NSPW_DATA_PROPDATA[self.DupeDataC]
+	local PropData = NSPW_DATA_PROPDATA(self.DupeDataC)
 
 	if self:GetAiming() or (self.LastAim or 0) > 0 then
 
@@ -2328,7 +2650,7 @@ local ScopeMat = Material("vgui/scope_shadowmask_test")
 
 function SWEP:DrawHUD()
 
-	local PropData = NSPW_DATA_PROPDATA[self.DupeDataC]
+	local PropData = NSPW_DATA_PROPDATA(self.DupeDataC) or {}
 
 	local W,H = ScrW(),ScrH()
 	local MulW,MulH = ScrW()/1920,ScrH()/1080
@@ -2404,15 +2726,16 @@ function SWEP:SecondaryAttack()
 	if SERVER then
 
 		local MyStyle = self:GetStyleData()
-		local PropData = NSPW_DATA_PROPDATA[self.DupeDataC]
+		local PropData = NSPW_DATA_PROPDATA(self.DupeDataC)
 			--print(!MyStyle.IsGun and !MyStyle.AlwaysBlock and !MyStyle.DoNothing)
 
 		if owner:KeyDown(IN_USE) then
 			self:DropMySelf()
+			self:CallOnClient("DropMySelf")
 		elseif !MyStyle.IsGun and !MyStyle.AlwaysBlock and !MyStyle.DoNothing then
 			local oldBlock = self:GetBlocking()
 
-			--print("?")
+			
 
 			self:SetBlocking(!oldBlock)
 			if oldBlock then
@@ -2440,7 +2763,7 @@ end
 
 function SWEP:PrimaryAttack()
 
-	--print("?")
+	
 	if !self:CanPrimaryAttack() then return end
 	
 
@@ -2464,7 +2787,7 @@ function SWEP:PrimaryAttack()
 		self:SetNextPrimaryFire(CurTime()+0.05)
 		for ent,_ in pairs(self.WireIO_E2List or {}) do
 
-			--print("?")
+			
 			if !IsValid(ent.entity) then continue end
 			
 			Count = Count + 1
@@ -2493,7 +2816,7 @@ function SWEP:PrimaryAttack()
 			end
 
 
-			local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
+			local PropData = NSPW_DATA_PROPDATA(self.DupeDataC) or {}
 
 			if MyStyle.IsGun and PropData.IsGun then
 				
@@ -2506,7 +2829,7 @@ function SWEP:PrimaryAttack()
 
 					if !IsValid(ent) then continue end
 
-					local PropData = NSPW_DATA_PROPDATA[ent] or {}
+					local PropData = NSPW_DATA_PROPDATA(ent) or {}
 					if PropData.ForceHeavyWeapon then
 						Heavy = true
 					end
@@ -2623,7 +2946,7 @@ function SWEP:PrimaryAttack()
 		
 					if !IsValid(ent) then continue end
 
-					local PropData = NSPW_DATA_PROPDATA[ent] or {}
+					local PropData = NSPW_DATA_PROPDATA(ent) or {}
 
 					if PropData.BulletTrace then
 						Trace[#Trace+1] = PropData.BulletTrace
@@ -2736,7 +3059,7 @@ function SWEP:PrimaryAttack()
 							if isfunction(PropData.BulletCallback) then
 								PropData.BulletCallback(self,attacker,tr,dinfo)
 							end
-							--print("?")
+							
 						end,
 						Damage = dmg,
 						Force = PropData.BulletForce or dmg/10,
@@ -2805,10 +3128,10 @@ function SWEP:PrimaryAttack()
 
 							if !IsValid(ent) then continue end
 
-							local PropData = NSPW_DATA_PROPDATA[ent] or {}
+							local PropData = NSPW_DATA_PROPDATA(ent) or {}
 
 							if isfunction(PropData.BulletCallback) then
-								--print("?")
+								
 								PropData.BulletCallback(self,owner,tr,Dmginfo,function(v)
 									Trace[#Trace + 1] = v
 								end,function(v)
@@ -2819,7 +3142,7 @@ function SWEP:PrimaryAttack()
 							end
 
 						end
-						tr.Entity:TakeDamageInfo(Dmginfo)
+						EntMeta.TakeDamageInfo(tr.Entity,Dmginfo)
 					end
 
 					--print(AimVec)
@@ -2829,7 +3152,7 @@ function SWEP:PrimaryAttack()
 					HitEffect = HitEffect[math.random(1,#HitEffect)]
 
 					--虽然util.Effect可以同步到客户端(多人),但是我们要求精细化(神他妈方格弹孔)
-					if !game.SinglePlayer() then
+					if !GameIsSP then
 						--Trace数据不重要,它就是一特效
 						net.Start("NSPW_TransTraceMessage",true)
 							net.WriteEntity(self)
@@ -2897,7 +3220,7 @@ function SWEP:PrimaryAttack()
 
 		end
 
-		--print("?")
+		
 	else
 
 	end
@@ -2928,7 +3251,7 @@ function SWEP:GetNPCBurstSettings()
 	--local time = 0.1
 
 
-	local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
+	local PropData = NSPW_DATA_PROPDATA(self.DupeDataC) or {}
 
 	if MyStyle.IsGun and PropData.IsGun then
 
@@ -2940,7 +3263,7 @@ function SWEP:GetNPCBurstSettings()
 
 			if !IsValid(ent) then continue end
 
-			local PropData = NSPW_DATA_PROPDATA[ent] or {}
+			local PropData = NSPW_DATA_PROPDATA(ent) or {}
 			if PropData.ForceHeavyWeapon then
 				Heavy = true
 			end
@@ -2998,7 +3321,7 @@ function SWEP:GetNPCBulletSpread(pro)
 	--local time = 0.1
 
 
-	local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
+	local PropData = NSPW_DATA_PROPDATA(self.DupeDataC) or {}
 
 	if MyStyle.IsGun and PropData.IsGun then
 
@@ -3011,7 +3334,7 @@ function SWEP:GetNPCBulletSpread(pro)
 
 			if !IsValid(ent) then continue end
 
-			local PropData = NSPW_DATA_PROPDATA[ent] or {}
+			local PropData = NSPW_DATA_PROPDATA(ent) or {}
 			if PropData.ForceHeavyWeapon then
 				Heavy = true
 			end
@@ -3065,7 +3388,7 @@ function SWEP:GetNPCRestTimes()
 	local time = 0.1
 
 
-	local PropData = NSPW_DATA_PROPDATA[self.DupeDataC] or {}
+	local PropData = NSPW_DATA_PROPDATA(self.DupeDataC) or {}
 
 	if MyStyle.IsGun and PropData.IsGun then
 
@@ -3075,7 +3398,7 @@ function SWEP:GetNPCRestTimes()
 
 			if !IsValid(ent) then continue end
 
-			local PropData = NSPW_DATA_PROPDATA[ent] or {}
+			local PropData = NSPW_DATA_PROPDATA(ent) or {}
 			time = time + (PropData.NextFireTime or 0)
 
 
@@ -3150,7 +3473,7 @@ end
 function SWEP:GetCapabilities()
 	local ht = self.HoldType
 	if ht == "melee" then 
-		--print("?")
+		
 		return CAP_WEAPON_MELEE_ATTACK1 
 	end
 	return bit.bor(

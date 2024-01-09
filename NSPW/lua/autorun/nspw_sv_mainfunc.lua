@@ -5,9 +5,12 @@
 
 	真.Credit
 	>代码
-	>>[YHG]骨灰蜜蜂: 做了这坨屎
+	>>[YHG]骨灰蜜蜂: 做了这坨屎(SPW)
 	>>Savee14702: 修复这坨屎并真正Re-worked这坨屎(是的这个东西应该是"重做..?"而不是"又工作了")
 	>>稻谷MCUT: 优化,绘制优化
+
+	>测试
+	>>tie_chun_nya(铁锤): 早期测试(帮忙查出来一堆勾使Bug)
 
 	>宣传
 	>>TheBillinator3000: 介绍SPW(或者SP2W)
@@ -41,28 +44,32 @@
 	格挡(武器击飞)
 	NPC Support
 	单手枪械动画
+	Attachment(附加Prop)
+	流星锤支持
 
 	[未 竟 事 业]
 	工具
 	->PROPERTIES MODIFY
-	近战动画重做
+	--近战动画重做
 	NPC神必小武器支持(怎么刻数据?)
 	枪械系统完善
 	-> 瞄准[完成]
 	-> 手感优化(?)
-	Attachment(附加Prop)
 	PropData100%全收集
 	--Wiremod支持...
+	E2 Functions
+	->添加/移除一个Prop
+	->即时检测约束
 	便于他人查看的UI
-	STYLE UI重做
-	翻新,以及SPW彩蛋(指暴击系统和一枪头模拟器)
+	翻新(?)
 	优化
 
 	[半步入土的]
-	流星锤支持
+	STYLE UI重做 --几把的太懒了
+	SPW彩蛋(指暴击系统和一枪头模拟器)
 
 	[死了的]
-	(啥时候能捡起布娃娃?)(估计不行了,限于引擎)
+	(啥时候能捡起布娃娃?)
 	INVSYS(不这个其实是另一个Addon)
 	
 ]]
@@ -126,7 +133,7 @@ local function GetAllConstrainedEntitiesAndConstraints( ent, EntTable, Constrain
 
 	-- Is the entity in the dupe whitelist?
 	-- 白名单将调用NSPW的,不需要这个
-	if ( ent:IsWorld() ) then
+	if ( ent:IsWorld() or ent:GetMoveType() != MOVETYPE_VPHYSICS ) then
 		-- MsgN( "duplicator: ", classname, " isn't allowed to be duplicated!" )
 		return
 	end
@@ -138,6 +145,8 @@ local function GetAllConstrainedEntitiesAndConstraints( ent, EntTable, Constrain
 
 	if ( !ent:IsWorld() ) then 
 		EntTable[ ent:EntIndex() ] = ent 
+	else
+		return
 	end
 
 	if ( !constraint.HasConstraints( ent ) ) then return end
@@ -261,9 +270,15 @@ end
 
 local ConstraintWhiteList = {
 	["Weld"] = true,
-	["Rope"] = true,
 	["NoCollide"] = true,
+	["Rope"] = true,
+	["Axis"] = true,
+	--["Rope"] = true,
 }
+--false: 仍然在视觉模型上绘制,不归位(无碰撞)
+--true: 绘制世界模型,收放强制归位(有碰撞)
+--local NotSoConstraintWhiteList = {
+--}
 
 local _ply = FindMetaTable("Player")
 
@@ -287,6 +302,9 @@ function _ply:NSPW_PickupItem()
 
 	TargetEnt = WhoIsMyDaddy(TargetEnt)
 
+	--等下暗影刀?????
+	--if TargetEnt.NSPW_PROP_NOCONSTRAINT then return end
+
 	
 
 	--过第一遍检测,检测有没有非白名单约束+查优先级
@@ -296,6 +314,7 @@ function _ply:NSPW_PickupItem()
 
 	for _,data in pairs(Dupe.Constraints) do
 		--防止某人做的流星锤崩服
+		--PrintTable(data)
 		if !ConstraintWhiteList[data.Type] then 
 			DebugMessage("[NSP2W捡起检测] 发现非白名单约束,开润",data.Type)
 			return
@@ -308,21 +327,24 @@ function _ply:NSPW_PickupItem()
 	local PropData = {}
 	for i,data in pairs(Dupe.Entities) do
 
-		if !NSPW_DATA_PROPDATA[data.Model] then continue end
+		local ent = Entity(i)
+		local NPropData = NSPW_DATA_PROPDATA(ent)
 
-		if (NSPW_DATA_PROPDATA[data.Model].Priority or 0) > CurPriority then
+		if !IsValid(ent) or !NPropData or ent.NSPW_PROP_NOCONSTRAINT then continue end
 
-			CurPriority = NSPW_DATA_PROPDATA[data.Model].Priority
-			TargetEnt = Entity(i)
+		if (NPropData.Priority or 0) > CurPriority then
+
+			CurPriority = NPropData.Priority
+			TargetEnt = ent
 			--print("城镇交替")
-			PropData = NSPW_DATA_PROPDATA[data.Model]
+			PropData = NPropData
 
 		end
 
 	end
 
 
-	DebugMessage("[NSP2W捡起检测]检测成功,开始同步数据 优先级实体: ",TargetEnt)
+	DebugMessage("[NSP2W捡起检测]检测成功,开始同步数据 优先级最大的实体: ",TargetEnt)
 
 	--[[local DPos,DAng = LocalToWorld(
 		(PropData.OffsetPos or Vector()),
@@ -356,7 +378,7 @@ function _ply:NSPW_PickupItem()
 			--print(cent,ent)
 
 			Found[cent] = true
-			Children[#Children + 1] = cent
+			Children[cent] = true
 			GetChildrens(cent)
 			--print(ent)
 
@@ -374,9 +396,32 @@ function _ply:NSPW_PickupItem()
 		if !IsValid(Ent) then continue end
 
 		GetChildrens(Ent)
+
+		if istable(Ent.NSPW_EXTRAENT) then
+			table.Merge(Children,Ent.NSPW_EXTRAENT)
+			--[[for e,_ in pairs(Ent.NSPW_EXTRAENT) do
+				if !Children[e] then
+					Children[e] = true
+				end
+			end]]
+		end
+
 	end
 
-	Dupe = duplicator.Copy(TargetEnt).Entities
+	local Count = 0
+
+	for ent,ref in pairs(table.Copy(Children)) do
+
+		--print(ent,ref)
+		Count = Count + 1
+		Children[Count] = ent
+		Children[ent] = nil
+
+	end
+
+	RDupe = duplicator.Copy(TargetEnt)
+	local Const = RDupe.Constraints
+	Dupe = RDupe.Entities
 	local data = duplicator.CopyEnts(Children).Entities
 	for i,dta in pairs(data) do
 
@@ -389,19 +434,38 @@ function _ply:NSPW_PickupItem()
 	duplicator.SetLocalPos(vector_origin)
 	duplicator.SetLocalAng(angle_zero)
 	--接替
-	local Count = {}
-	for i,data in pairs(table.Copy(Dupe)) do
-		--print(i)
+	--local ConstEntTbl = {}
+	Count = {}
+
+	local function AddData(i,data)
 		local e = Entity(tonumber(i))
-		e.NSPW_PROP_MYPARENT = e:GetParent()
+		parent = e:GetParent()
+		--TODO: 加PPM
+		--[[if !e.NSPW_PROP_NOCONSTRAINT and (!IsValid(parent) or parent == e) then
+			--ConstEntTbl[e] = data
+			data.NSPW_PROP_TEMP_HASPARENT
+			--print("?")
+		end]]
+
+		if IsValid(parent) and parent != e then
+			e.NSPW_PROP_PARENTLPos = e:GetLocalPos()
+			e.NSPW_PROP_PARENTLAng = e:GetLocalAngles()
+		end
+
+		e.NSPW_PROP_MYPARENT = parent
 		e.NSPW_PROP_OLDCOLLISIONCHECK = e:GetCustomCollisionCheck()
 		e.NSPW_PROP_OLDCOLLISIONGROUP = e:GetCollisionGroup()
+		
 		if !e:GetNoDraw() then
 			Count[#Count + 1] = i
+			--if !e.NSPW_PROP_NOCONSTRAINT then
 			Dupe[e] = data
+			--end
 		end
 		Dupe[i] = nil
-		--print(i)
+	end
+	for i,data in pairs(table.Copy(Dupe)) do
+		AddData(i,data)
 	end
 
 	--在这里做枪械/近战检测
@@ -414,6 +478,8 @@ function _ply:NSPW_PickupItem()
 
 	local wep = ents.Create("nspw_melee")
 
+	wep:SetOwner(self)
+
 	--这些数据发给客户端用于绘制,真正位移在服务端
 	--wep:SetPropEntityCount(#Count)
 	--wep:SetPropParentEntity(TargetEnt)
@@ -423,24 +489,64 @@ function _ply:NSPW_PickupItem()
 		--print(Entity(index))
 
 	end]]
-	wep.DupeData = Dupe
+	wep.DupeData = table.Copy(Dupe)
+	--wep.DupeDataConstraint = ConstEntTbl
 	wep.DupeDataC = TargetEnt
 	--wep:Spawn()
 	wep:Holster()
 	self:PickupWeapon(wep)
 	--在下一Tick的下一Tick(大概)调用它,因为它出现在客户端需要亿点点Tick
-	timer.Simple(.01+FrameTime(),function()
+	--Todo: 帧影响
+	--table.Merge(Dupe,NoConstraint)
+	--[[for _,d in pairs(Const) do
+		
+		--NAH I'M JUST A CONSTRAINT. ARE YOU EXPECTING TO GET ANYTHING FROM ME?
+
+		if !IsValid(d.Constraint) or !d.Constraint:IsConstraint() then continue end
+		Dupe[d.Constraint] = {}
+
+	end]]
+	--RDupe.Maxs = RDupe.Maxs - TargetEnt:OBBCenter()
+	--RDupe.Mins = RDupe.Mins - TargetEnt:OBBCenter()
+	local lenx,leny,lenz = RDupe.Maxs.x-RDupe.Mins.x,
+						   RDupe.Maxs.y-RDupe.Mins.y,
+						   RDupe.Maxs.z-RDupe.Mins.z
+	local cenx,ceny,cenz = (RDupe.Maxs.x+RDupe.Mins.x)/2,
+						   (RDupe.Maxs.y+RDupe.Mins.y)/2,
+						   (RDupe.Maxs.z+RDupe.Mins.z)/2
+	--print(RDupe.Maxs,RDupe.Mins)
+	local x,y,z = math.abs(leny*lenz),math.abs(lenx*lenz),math.abs(lenx*leny)
+	local Tar = "x"
+	local len1 = cenx
+	local len2 = cenz
+	local fin = math.max(x,y,z)
+	if fin == y then
+		Tar = "y"
+		len1 = ceny
+		len2 = cenz
+	elseif fin == z then
+		Tar = "z"
+		len1 = cenz
+		len2 = ceny
+	end
+	timer.Simple(.02+FrameTime()*10,function()
 
 		if !IsValid(self) or !IsValid(wep) then return end
 
 		net.Start("NSPW_TransPropTableMessage")
 			net.WriteEntity(wep)
 			net.WriteEntity(TargetEnt)
+			--net.WriteString(Tar)
+			--net.WriteFloat(fin^0.5)
+			--net.WriteFloat(len1)
+			--net.WriteFloat(len2)
 			--net.WriteTable(Dupe)
 			net.WriteUInt(#Count,16)
-			for ent,_ in pairs(Dupe) do
+			for ent,data in pairs(Dupe) do
 				--print(ent)
 				net.WriteEntity(ent)
+				--net.WriteVector(data.Pos)
+				--net.WriteAngle(data.Angle)
 			end
 		net.Broadcast()
 
@@ -466,6 +572,8 @@ hook.Add("ShouldCollide","NSPW_Hooks_NoCollideWeapon",function(e1,e2)
 		or e2 == e1.NSPW_PROP_RELATEDWEAPON:GetOwner() 
 		or e2.NSPW_PROP_RELATEDWEAPON
 	) then
+		--print(e1,e2)
+		--print("?")
 		return false
 	end
 
@@ -511,7 +619,7 @@ hook.Add("EntityTakeDamage","NSPW_Hooks_BlockDamage",function(ply,dinfo)
 
 		if !IsValid(ent) then continue end
 
-		local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
+		local PropData = NSPW_DATA_PROPDATA(ent) or {}
 
 		local pobj = ent:GetPhysicsObject()
 		local mass
@@ -547,7 +655,7 @@ hook.Add("EntityTakeDamage","NSPW_Hooks_BlockDamage",function(ply,dinfo)
 		if !IsValid(ent) then continue end
 
 
-		local PropData = NSPW_DATA_PROPDATA[ent:GetModel()] or {}
+		local PropData = NSPW_DATA_PROPDATA(ent) or {}
 		--武器击飞
 		if GetConVar("savee_nspw_block_weapondrop_on"):GetBool() then
 
@@ -608,6 +716,11 @@ end)
 duplicator.RegisterEntityModifier( "NSPW_MODIFIER_PROPERTIESSTATE", function(p,e,d)
 
 	e.NSPW_PROP_DISABLEPROPERTIES = d[1]
+
+end)
+duplicator.RegisterEntityModifier( "NSPW_MODIFIER_NOCONSTRAINT", function(p,e,d)
+
+	e.NSPW_PROP_NOCONSTRAINT = d[1]
 
 end)
 

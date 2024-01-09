@@ -27,11 +27,28 @@ e2function void setNSPWNextPrimaryAttack(entity wep,number time)
 	--鉴于这玩意作弊性质严重,所以我们要禁了它默认的攻击
 	--print("true")
 	if wep.WireIO_ShouldAttack then 
-		self:throw("Disable attack first!")
+		self:throw("Disable attacking first!")
 		--print("没活了")
 		return 
 	end
 	wep:SetNextPrimaryFire(CurTime()+math.max(0.05,time))
+	
+end
+
+e2function void setNSPWPropertiesEnabled(entity ent,number enabled)
+	--print(!IsValid(wep) , wep:GetClass() != "nspw_melee")
+	if !IsValid(ent) or ent:GetOwner() != self.player then return end
+	
+	ent.NSPW_PROP_DISABLEPROPERTIES = enabled != 0 and true or false
+	
+end
+
+e2function void aNSPWAddEntity(entity ent)
+	--print(!IsValid(wep) , wep:GetClass() != "nspw_melee")
+	if !IsValid(ent) or ent:GetOwner() != self.player then return end
+	
+	if !self.NSPW_EXTRAENT then self.NSPW_EXTRAENT = {} end
+	self.NSPW_EXTRAENT[ent] = true
 	
 end
 

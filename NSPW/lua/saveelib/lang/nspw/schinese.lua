@@ -5,11 +5,7 @@
 local Lang = {}
 Lang._LanguageName = "SChinese(简体中文)"
 
-Lang.NSPW_TOOL_CATEGORY_PPM = "属性修改器"
-
-Lang.NSPW_NAMEGENERATOR_MULT = "复杂"
-Lang.NSPW_NAMEGENERATOR_HEAVY = "沉重"
-Lang.NSPW_NAMEGENERATOR_END = "的 "
+Lang.NSPW_TOOL_CATEGORY
 
 Lang.UserManual = [[
 NSPW 用户手册

@@ -66,6 +66,8 @@ local ConstraintWhiteList = {
 -- This function/hook is called when the player presses their left click
 function TOOL:LeftClick( tr )
 
+	if CLIENT then return true end
+
 	local owner = self:GetOwner()
 	local ent = tr.Entity
 	if !IsValid(ent) or !ent:IsNPC() or !owner.NSPW_TOOLGUN_NPCWEAPONS_DupeData then return end
@@ -108,14 +110,14 @@ function TOOL:LeftClick( tr )
 	local PropData = {}
 	for i,data in pairs(Dupe.Entities) do
 
-		if !NSPW_DATA_PROPDATA[data.Model] then continue end
+		if !NSPW_DATA_PROPDATA(data.Model) then continue end
 
-		if (NSPW_DATA_PROPDATA[data.Model].Priority or 0) > CurPriority then
+		if (NSPW_DATA_PROPDATA(data.Model).Priority or 0) > CurPriority then
 
-			CurPriority = NSPW_DATA_PROPDATA[data.Model].Priority
+			CurPriority = NSPW_DATA_PROPDATA(data.Model).Priority
 			TargetEnt = Entity(i)
 			--print("城镇交替")
-			PropData = NSPW_DATA_PROPDATA[data.Model]
+			PropData = NSPW_DATA_PROPDATA(data.Model)
 
 		end
 
@@ -253,6 +255,8 @@ end
 -- This function/hook is called when the player presses their right click
 function TOOL:RightClick( tr )
 
+	if CLIENT then return true end
+
 	local TargetEnt = tr.Entity
 
 	if !TargetEnt then return end
@@ -292,14 +296,14 @@ function TOOL:RightClick( tr )
 	local PropData = {}
 	for i,data in pairs(Dupe.Entities) do
 
-		if !NSPW_DATA_PROPDATA[data.Model] then continue end
+		if !NSPW_DATA_PROPDATA(data.Model) then continue end
 
-		if (NSPW_DATA_PROPDATA[data.Model].Priority or 0) > CurPriority then
+		if (NSPW_DATA_PROPDATA(data.Model).Priority or 0) > CurPriority then
 
-			CurPriority = NSPW_DATA_PROPDATA[data.Model].Priority
+			CurPriority = NSPW_DATA_PROPDATA(data.Model).Priority
 			TargetEnt = Entity(i)
 			--print("城镇交替")
-			PropData = NSPW_DATA_PROPDATA[data.Model]
+			PropData = NSPW_DATA_PROPDATA(data.Model)
 
 		end
 
@@ -405,8 +409,6 @@ end
 
 -- This function/hook is called when the player presses their reload key
 function TOOL:Reload( trace )
-	-- The SWEP doesn't reload so this does nothing :(
-	Msg( "RELOAD\n" )
 end
 
 -- This function/hook is called every frame on client and every tick on the server
