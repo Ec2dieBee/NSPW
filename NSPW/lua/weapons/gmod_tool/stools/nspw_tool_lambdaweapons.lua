@@ -107,14 +107,14 @@ function TOOL:LeftClick( tr )
 	local PropData = {}
 	for i,data in pairs(Dupe.Entities) do
 
-		if !NSPW_DATA_PROPDATA(data.Model) then continue end
+		if !NSPW_DATA_PROPDATA[data.Model] then continue end
 
-		if (NSPW_DATA_PROPDATA(data.Model).Priority or 0) > CurPriority then
+		if (NSPW_DATA_PROPDATA[data.Model].Priority or 0) > CurPriority then
 
-			CurPriority = NSPW_DATA_PROPDATA(data.Model).Priority
+			CurPriority = NSPW_DATA_PROPDATA[data.Model].Priority
 			TargetEnt = Entity(i)
 			--print("城镇交替")
-			PropData = NSPW_DATA_PROPDATA(data.Model)
+			PropData = NSPW_DATA_PROPDATA[data.Model]
 
 		end
 
@@ -194,13 +194,13 @@ function TOOL:LeftClick( tr )
 	duplicator.SetLocalPos(vector_origin)
 	duplicator.SetLocalAng(angle_zero)
 	
-	local RPropData = NSPW_DATA_PROPDATA(TargetEnt)
+	local RPropData = NSPW_DATA_PROPDATA[TargetEnt]
 
 	for ent,_ in pairs(Dupe) do 
 
 		if !IsValid(ent) or ent == TargetEnt then continue end
 
-		local PropData = NSPW_DATA_PROPDATA(ent) or {}
+		local PropData = NSPW_DATA_PROPDATA[ent] or {}
 		RPropData.Magsize = RPropData.Magsize + (PropData.Magsize or 0)
 
 		RPropData.ReloadSpeedMul = RPropData.ReloadSpeedMul * (PropData.ReloadSpeedMul or 1)

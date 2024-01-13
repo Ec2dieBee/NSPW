@@ -25,6 +25,12 @@ TOOL.ClientConVar[ "val" ] = "0"
 
 
 -- This function/hook is called when the player presses their left click
+
+-- TRY SOME FOLD
+local BlackList = {
+
+}
+
 function TOOL:LeftClick( tr )
 
 	if CLIENT then return true end

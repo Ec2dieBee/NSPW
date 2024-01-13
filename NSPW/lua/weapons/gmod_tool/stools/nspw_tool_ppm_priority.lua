@@ -51,7 +51,7 @@ function TOOL:RightClick( tr )
 
 	if !IsValid(ent) then return end
 
-	self:GetOwner():ConCommand( ToolName .. "_val " .. (NSPW_DATA_PROPDATA(ent).Priority or 0) )
+	self:GetOwner():ConCommand( ToolName .. "_val " .. (NSPW_DATA_PROPDATA[ent].Priority or 0) )
 
 	return true
 end

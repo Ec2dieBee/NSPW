@@ -1900,19 +1900,19 @@ for _,_ in pairs(datatbl) do
 	Count = Count+1
 end
 
---[[local MetaTable = {}
+local MetaTable = {}
 function datatbl:__index(key)
 
 	if isentity(key) and IsValid(key) and key.NSPW_PROP_DISABLEPROPERTIES then
-		print("因数据被强制取消而返还空")
+		--print("因数据被强制取消而返还空")
 		return {}
 	end
 
 	if isentity(key) and IsValid(key) and key.NSPW_PROP_PROPDATA then
-		print("进程: 实体有特技")
+		--print("进程: 实体有特技")
 
 		if key.NSPW_PROP_PROPDATA_FORCEOVERRIDE then
-			print("->返还了实体本身的表")
+			--print("->返还了实体本身的表")
 			return key.NSPW_PROP_PROPDATA
 		else
 
@@ -1937,18 +1937,18 @@ function datatbl:__index(key)
 				end
 
 			end
-			print("-> 返还了普通的表")
+			--print("-> 返还了普通的表")
 
 			return tbl
 		end
 
 	else
-		local tbl = datatbl[isentity(key) and string.lower(key:GetModel() or "") or (string.lower(key))]
+		local tbl = datatbl[isentity(key) and string.lower(key:GetModel() or "") or (string.lower(key or ""))]
 		if !istable(tbl) then 
-			print("这是一坨被加工的屎,其中这坨屎是",IsValid(key))
+			--print("这是一坨被加工的屎,其中这坨屎是",IsValid(key))
 			tbl = {} 
 		end
-		print("这是一坨屎")
+		--print("这是一坨屎")
 		return tbl
 	end
 
@@ -1956,8 +1956,8 @@ end
 
 setmetatable(MetaTable,datatbl)
 
-NSPW_DATA_PROPDATA = MetaTable]]
-NSPW_DATA_PROPDATA = function(key)
+NSPW_DATA_PROPDATA = MetaTable
+--[[NSPW_DATA_PROPDATA = function(key)
 
 	if isentity(key) and !IsValid(key) then return {} end
 
@@ -2009,7 +2009,7 @@ NSPW_DATA_PROPDATA = function(key)
 		--print("这是一坨屎")
 		return tbl
 	end
-end
+end]]
 _NSPW_DATA_PROPDATA = datatbl
 
 print("NSPW的Prop数据现在有[原版]: "..Count)

@@ -110,14 +110,14 @@ function TOOL:LeftClick( tr )
 	local PropData = {}
 	for i,data in pairs(Dupe.Entities) do
 
-		if !NSPW_DATA_PROPDATA(data.Model) then continue end
+		if !NSPW_DATA_PROPDATA[data.Model] then continue end
 
-		if (NSPW_DATA_PROPDATA(data.Model).Priority or 0) > CurPriority then
+		if (NSPW_DATA_PROPDATA[data.Model].Priority or 0) > CurPriority then
 
-			CurPriority = NSPW_DATA_PROPDATA(data.Model).Priority
+			CurPriority = NSPW_DATA_PROPDATA[data.Model].Priority
 			TargetEnt = Entity(i)
 			--print("城镇交替")
-			PropData = NSPW_DATA_PROPDATA(data.Model)
+			PropData = NSPW_DATA_PROPDATA[data.Model]
 
 		end
 
@@ -296,14 +296,14 @@ function TOOL:RightClick( tr )
 	local PropData = {}
 	for i,data in pairs(Dupe.Entities) do
 
-		if !NSPW_DATA_PROPDATA(data.Model) then continue end
+		if !NSPW_DATA_PROPDATA[data.Model] then continue end
 
-		if (NSPW_DATA_PROPDATA(data.Model).Priority or 0) > CurPriority then
+		if (NSPW_DATA_PROPDATA[data.Model].Priority or 0) > CurPriority then
 
-			CurPriority = NSPW_DATA_PROPDATA(data.Model).Priority
+			CurPriority = NSPW_DATA_PROPDATA[data.Model].Priority
 			TargetEnt = Entity(i)
 			--print("城镇交替")
-			PropData = NSPW_DATA_PROPDATA(data.Model)
+			PropData = NSPW_DATA_PROPDATA[data.Model]
 
 		end
 
