@@ -81,6 +81,7 @@ AddCSLuaFile("saveelib/cl_saveelib_draw.lua")
 util.AddNetworkString("NSPW_TransStyleMessage")
 util.AddNetworkString("NSPW_TransTraceMessage")
 util.AddNetworkString("NSPW_TransPropTableMessage")
+util.AddNetworkString("NSPW_TransDroppedPropMessage")
 
 net.Receive("NSPW_TransStyleMessage", function(_,p)
 
@@ -98,19 +99,71 @@ net.Receive("NSPW_TransPropTableMessage",function(_,p)
 
 	local Wep = net.ReadEntity()
 	if !IsValid(Wep) then return end
-	net.Start("NSPW_TransPropTableMessage")
-		net.WriteEntity(Wep)
-		net.WriteEntity(TargetEnt)
-		local Count = 0
-		for _,_ in pairs(Wep.DupeData) do
-			Count = Count + 1
-		end
-		--net.WriteTable(Dupe)
-		net.WriteUInt(Count,16)
-		for ent,_ in pairs(Wep.DupeData) do
-			net.WriteEntity(ent)
-		end
-	net.Send(p)
+	local Maxs = Wep.DupeData_MAX
+	local Mins = Wep.DupeData_MIN
+	local lenx,leny,lenz = Maxs.x-Mins.x,
+						   Maxs.y-Mins.y,
+						   Maxs.z-Mins.z
+	local cenx,ceny,cenz = (Maxs.x+Mins.x)/2,
+						   (Maxs.y+Mins.y)/2,
+						   (Maxs.z+Mins.z)/2
+	--print(RDupe.Maxs,RDupe.Mins)
+	local x,y,z = math.abs(leny*lenz),math.abs(lenx*lenz),math.abs(lenx*leny)
+	local Tar = "x"
+	local len1 = cenx
+	local len2 = cenz
+	local fin = math.max(x,y,z)
+	if fin == y then
+		Tar = "y"
+		len1 = ceny
+		len2 = cenz
+	elseif fin == z then
+		Tar = "z"
+		len1 = cenz
+		len2 = ceny
+	end
+	local NewData = {}
+	for ent,data in pairs(Wep.DupeData) do
+		--ProtectedCall(ent.Think)
+		--print(ent)
+		if ent == TargetEnt then continue end
+		NewData[ent:EntIndex()] = {
+			--Ent = ent,
+			Pos = data.Pos,
+			Angle = data.Angle
+		}
+	end
+	local Cmp = util.Compress(util.TableToJSON(NewData))
+	local BA = #Cmp
+	--print(util.TableToJSON(NewData))
+	timer.Simple(.02+FrameTime()*10,function()
+
+		--local Cmp = util.Compress(util.TableToJSON(NewData))
+		--local BA = #Cmp
+		if !IsValid(self) or !IsValid(wep) then return end
+
+		net.Start("NSPW_TransPropTableMessage")
+			net.WriteEntity(wep)
+			net.WriteEntity(TargetEnt)
+
+			net.WriteString(Tar)
+			net.WriteFloat(fin^0.5)
+			net.WriteFloat(len1)
+			net.WriteFloat(len2)
+			
+			net.WriteUInt(BA, 16)
+			net.WriteData(Cmp, BA)
+			--net.WriteTable(Dupe)
+			--net.WriteUInt(#Count,16)
+			--[[for ent,data in pairs(Dupe) do
+				--print(ent)
+				net.WriteEntity(ent)
+				--net.WriteVector(data.Pos)
+				--net.WriteAngle(data.Angle)
+			end]]
+		net.Broadcast()
+
+	end)
 	--PrintTable(TBL)
 
 end)
@@ -287,7 +340,7 @@ function _ply:NSPW_PickupItem()
 	local TargetEnt = self:GetEyeTrace().Entity
 
 	--查距离,大伙都不是长臂猿
-	--求一个值的平方的占用比开一个值的方小
+	--求一个值的平方的占用比开一个值的方小(确信)
 	if TargetEnt:GetPos():DistToSqr(self:GetPos()) > GetConVar("savee_nspw_pickuprange"):GetFloat()^2 then return end
 
 	local function WhoIsMyDaddy(child)
@@ -328,7 +381,7 @@ function _ply:NSPW_PickupItem()
 	for i,data in pairs(Dupe.Entities) do
 
 		local ent = Entity(i)
-		local NPropData = NSPW_DATA_PROPDATA(ent)
+		local NPropData = NSPW_DATA_PROPDATA[ent]
 
 		if !IsValid(ent) or !NPropData or ent.NSPW_PROP_NOCONSTRAINT then continue end
 
@@ -361,25 +414,30 @@ function _ply:NSPW_PickupItem()
 	--duplicator.Copy(Entity ent, table tableToAdd={})
 
 	local Children = {}
-	local Found = {}
+	--local Found = {}
 
 	local function GetChildrens(ent)
 
 		if !IsValid(ent) then return end
 		--print(114)
 		--PrintTable(ent:GetChildren())
-		--for _,ent in pairs(ent:GetChildren()) do
+		--[[for _,cent in pairs(ent:GetChildren()) do
+			if !IsValid(cent) or Children[cent] then continue end
+			Children[cent] = true
+			GetChildrens(cent)
+		end]]
 		--事实: 上面那个东西查不到太多 
 		for _,cent in pairs(ents.GetAll()) do 
 
-			if !IsValid(cent) or Found[cent] then continue end
+			if !IsValid(cent) or Children[cent] then continue end
 			
 			if cent:GetParent() != ent then continue end
 			--print(cent,ent)
 
-			Found[cent] = true
+			--Found[cent] = true
 			Children[cent] = true
 			GetChildrens(cent)
+			--print(cent)
 			--print(ent)
 
 
@@ -408,25 +466,20 @@ function _ply:NSPW_PickupItem()
 
 	end
 
-	local Count = 0
-
-	for ent,ref in pairs(table.Copy(Children)) do
-
-		--print(ent,ref)
-		Count = Count + 1
-		Children[Count] = ent
-		Children[ent] = nil
-
-	end
-
 	RDupe = duplicator.Copy(TargetEnt)
 	local Const = RDupe.Constraints
 	Dupe = RDupe.Entities
-	local data = duplicator.CopyEnts(Children).Entities
-	for i,dta in pairs(data) do
+	--PrintTable(Children)
+	--local data = duplicator.CopyEnts(Children).Entities
+	for i,_ in pairs(Children) do
 
-		if Dupe[i] then continue end
-		Dupe[i] = dta
+		if !IsValid(i) then continue end
+
+		local ei = i:EntIndex()
+		--print(i)
+
+		if Dupe[ei] then continue end
+		Dupe[ei] = duplicator.CopyEntTable(i)
 
 	end
 	--PrintTable(duplicator.CopyEnts(Children).Entities)
@@ -435,7 +488,7 @@ function _ply:NSPW_PickupItem()
 	duplicator.SetLocalAng(angle_zero)
 	--接替
 	--local ConstEntTbl = {}
-	Count = {}
+	local Count = {}
 
 	local function AddData(i,data)
 		local e = Entity(tonumber(i))
@@ -490,6 +543,8 @@ function _ply:NSPW_PickupItem()
 
 	end]]
 	wep.DupeData = table.Copy(Dupe)
+	wep.DupeData_MAX = RDupe.Maxs
+	wep.DupeData_MIN = RDupe.Mins
 	--wep.DupeDataConstraint = ConstEntTbl
 	wep.DupeDataC = TargetEnt
 	--wep:Spawn()
@@ -529,25 +584,45 @@ function _ply:NSPW_PickupItem()
 		len1 = cenz
 		len2 = ceny
 	end
+	local NewData = {}
+	for ent,data in pairs(Dupe) do
+		--ProtectedCall(ent.Think)
+		--print(ent)
+		if ent == TargetEnt then continue end
+		NewData[ent:EntIndex()] = {
+			--Ent = ent,
+			Pos = data.Pos,
+			Angle = data.Angle
+		}
+	end
+	local Cmp = util.Compress(util.TableToJSON(NewData))
+	local BA = #Cmp
+	--print(util.TableToJSON(NewData))
 	timer.Simple(.02+FrameTime()*10,function()
 
+		--local Cmp = util.Compress(util.TableToJSON(NewData))
+		--local BA = #Cmp
 		if !IsValid(self) or !IsValid(wep) then return end
 
 		net.Start("NSPW_TransPropTableMessage")
 			net.WriteEntity(wep)
 			net.WriteEntity(TargetEnt)
-			--net.WriteString(Tar)
-			--net.WriteFloat(fin^0.5)
-			--net.WriteFloat(len1)
-			--net.WriteFloat(len2)
+
+			net.WriteString(Tar)
+			net.WriteFloat(fin^0.5)
+			net.WriteFloat(len1)
+			net.WriteFloat(len2)
+			
+			net.WriteUInt(BA, 16)
+			net.WriteData(Cmp, BA)
 			--net.WriteTable(Dupe)
-			net.WriteUInt(#Count,16)
-			for ent,data in pairs(Dupe) do
+			--net.WriteUInt(#Count,16)
+			--[[for ent,data in pairs(Dupe) do
 				--print(ent)
 				net.WriteEntity(ent)
 				--net.WriteVector(data.Pos)
 				--net.WriteAngle(data.Angle)
-			end
+			end]]
 		net.Broadcast()
 
 	end)
@@ -563,16 +638,25 @@ concommand.Add("savee_nspw_debug_pickup",function(p)
 	p:NSPW_PickupItem()
 end)
 
+--[[local BlackList = {
+	[MOVETYPE_VPHYSICS] = true,
+}]]
+
 hook.Add("ShouldCollide","NSPW_Hooks_NoCollideWeapon",function(e1,e2)
 
-	--print(e1,e2)
+	--print(e1,e2,(e2:GetMoveType() != MOVETYPE_VPHYSICS or e1:GetMoveType() != MOVETYPE_VPHYSICS))
+		--print(e1,e2)
 	if IsValid(e1.NSPW_PROP_RELATEDWEAPON) and IsValid(e1.NSPW_PROP_RELATEDWEAPON:GetOwner()) and 
 	(
-		(isfunction(e1.NSPW_PROP_RELATEDWEAPON:GetOwner().GetActiveWeapon) and e1.NSPW_PROP_RELATEDWEAPON:GetOwner():GetActiveWeapon() != e1.NSPW_PROP_RELATEDWEAPON)
-		or e2 == e1.NSPW_PROP_RELATEDWEAPON:GetOwner() 
-		or e2.NSPW_PROP_RELATEDWEAPON
-	) then
-		--print(e1,e2)
+		(
+			(isfunction(e1.NSPW_PROP_RELATEDWEAPON:GetOwner().GetActiveWeapon) and e1.NSPW_PROP_RELATEDWEAPON:GetOwner():GetActiveWeapon() != e1.NSPW_PROP_RELATEDWEAPON)
+			or e2 == e1.NSPW_PROP_RELATEDWEAPON:GetOwner() 
+			or e2.NSPW_PROP_RELATEDWEAPON) 
+		--[[or 
+		(
+			!BlackList[e2:GetMoveType()]
+		)]]
+	) then -- and (e2:GetMoveType() != MOVETYPE_VPHYSICS or e1:GetMoveType() != MOVETYPE_VPHYSICS) then
 		--print("?")
 		return false
 	end
@@ -619,7 +703,7 @@ hook.Add("EntityTakeDamage","NSPW_Hooks_BlockDamage",function(ply,dinfo)
 
 		if !IsValid(ent) then continue end
 
-		local PropData = NSPW_DATA_PROPDATA(ent) or {}
+		local PropData = NSPW_DATA_PROPDATA[ent] or {}
 
 		local pobj = ent:GetPhysicsObject()
 		local mass
@@ -655,7 +739,7 @@ hook.Add("EntityTakeDamage","NSPW_Hooks_BlockDamage",function(ply,dinfo)
 		if !IsValid(ent) then continue end
 
 
-		local PropData = NSPW_DATA_PROPDATA(ent) or {}
+		local PropData = NSPW_DATA_PROPDATA[ent] or {}
 		--武器击飞
 		if GetConVar("savee_nspw_block_weapondrop_on"):GetBool() then
 
@@ -723,5 +807,15 @@ duplicator.RegisterEntityModifier( "NSPW_MODIFIER_NOCONSTRAINT", function(p,e,d)
 	e.NSPW_PROP_NOCONSTRAINT = d[1]
 
 end)
+
+--[[local ent = ents.Create("prop_physics")
+ent:SetModel("models/props_c17/oildrum001.mdl")
+ent:SetPos(Vector(8000,8000,8000))
+ent:Spawn()
+timer.Simple(5, function()
+	net.Start("NSPW_TransPropTableMessage")
+		net.WriteUInt(ent:EntIndex(),16)
+	net.Broadcast()
+end)]]
 
 --DebugMessage("DSB")
