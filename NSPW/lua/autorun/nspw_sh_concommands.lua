@@ -6,6 +6,7 @@ CreateConVar("savee_nspw_debug_slowtrace",0,{FCVAR_ARCHIVE,FCVAR_PROTECTED,FCVAR
 CreateConVar("savee_nspw_masslimit",35,{FCVAR_ARCHIVE,FCVAR_PROTECTED,FCVAR_REPLICATED})
 CreateConVar("savee_nspw_heavygun",20,{FCVAR_ARCHIVE,FCVAR_PROTECTED,FCVAR_REPLICATED})
 CreateConVar("savee_nspw_pickuprange",128,{FCVAR_ARCHIVE,FCVAR_PROTECTED,FCVAR_REPLICATED})
+CreateConVar("savee_nspw_slot",5,{FCVAR_ARCHIVE,FCVAR_PROTECTED,FCVAR_REPLICATED})
 CreateConVar("savee_nspw_damage_gun_headshotmult",3,{FCVAR_ARCHIVE,FCVAR_PROTECTED,FCVAR_REPLICATED})
 CreateConVar("savee_nspw_damage_gun_twohandrecoilpunish",3,{FCVAR_ARCHIVE,FCVAR_PROTECTED,FCVAR_REPLICATED})
 CreateConVar("savee_nspw_damage_gun_twohandaccpunish",3,{FCVAR_ARCHIVE,FCVAR_PROTECTED,FCVAR_REPLICATED})

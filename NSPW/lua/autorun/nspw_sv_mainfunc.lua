@@ -6,7 +6,7 @@
 	真.Credit
 	>代码
 	>>[YHG]骨灰蜜蜂: 做了这坨屎(SPW)
-	>>Savee14702: 修复这坨屎并真正Re-worked这坨屎(是的这个东西应该是"重做..?"而不是"又工作了")
+	>>Savee14702: 修复这坨屎并真正Re-worked这坨屎(是的这个东西应该是"重做..?"而不是"又工作了")(和上面一个人)
 	>>稻谷MCUT: 优化,绘制优化
 
 	>测试
@@ -15,10 +15,16 @@
 	>宣传
 	>>TheBillinator3000: 介绍SPW(或者SP2W)
 	>>NecrosViedos: 介绍SPW(或者SP2W)(以及留了个能用的存档)
+	>>Savee14702: 一坨
 
 
 	所以你都看到这了,你为什么不想办法帮我Port几个Miku模型到kenshi呢?
 	(顺便帮忙Port几个Miku R-18模型到Gmod,谢了)
+
+
+	专有名词(大虚)解释
+	保加利亚模式: 因为音乐HOP的MV中有一段图标闪烁,像极了NSPW的物品抽搐问题(也是闪烁),故因此得名
+
 ]]
 
 --[[
@@ -45,24 +51,24 @@
 	NPC Support
 	单手枪械动画
 	Attachment(附加Prop)
-	流星锤支持
+	枪械系统完善
 
 	[未 竟 事 业]
+	流星锤支持
+	SLOT SYSTEM
+	自由物品旋转(大概)
 	工具
 	->PROPERTIES MODIFY
 	--近战动画重做
 	NPC神必小武器支持(怎么刻数据?)
-	枪械系统完善
-	-> 瞄准[完成]
-	-> 手感优化(?)
 	PropData100%全收集
-	--Wiremod支持...
 	E2 Functions
 	->添加/移除一个Prop
 	->即时检测约束
 	便于他人查看的UI
 	翻新(?)
 	优化
+	用 户 手 册
 
 	[半步入土的]
 	STYLE UI重做 --几把的太懒了
@@ -82,6 +88,8 @@ util.AddNetworkString("NSPW_TransStyleMessage")
 util.AddNetworkString("NSPW_TransTraceMessage")
 util.AddNetworkString("NSPW_TransPropTableMessage")
 util.AddNetworkString("NSPW_TransDroppedPropMessage")
+--Slot,ItemUse等
+util.AddNetworkString("NSPW_TransMiscMessage")
 
 net.Receive("NSPW_TransStyleMessage", function(_,p)
 
@@ -95,75 +103,102 @@ net.Receive("NSPW_TransStyleMessage", function(_,p)
 
 end)
 
+net.Receive("NSPW_TransMiscMessage", function(_,p)
+
+
+	if !IsValid(p) then return end
+	local Wep = p:GetActiveWeapon()
+
+	if !IsValid(Wep) or Wep:GetClass() != "nspw_melee" then return end
+
+	local Type = net.ReadUInt(4)
+	if Type == 0 then
+		local Drop = net.ReadBool()
+		local slot = net.ReadUInt(8)
+		if Drop then
+			Wep:DropMySelf(slot)
+		else
+			Wep:ChangeSlot(slot)
+		end
+	end
+	
+
+end)
+
 net.Receive("NSPW_TransPropTableMessage",function(_,p)
 
-	local Wep = net.ReadEntity()
-	if !IsValid(Wep) then return end
-	local Maxs = Wep.DupeData_MAX
-	local Mins = Wep.DupeData_MIN
-	local lenx,leny,lenz = Maxs.x-Mins.x,
-						   Maxs.y-Mins.y,
-						   Maxs.z-Mins.z
-	local cenx,ceny,cenz = (Maxs.x+Mins.x)/2,
-						   (Maxs.y+Mins.y)/2,
-						   (Maxs.z+Mins.z)/2
-	--print(RDupe.Maxs,RDupe.Mins)
-	local x,y,z = math.abs(leny*lenz),math.abs(lenx*lenz),math.abs(lenx*leny)
-	local Tar = "x"
-	local len1 = cenx
-	local len2 = cenz
-	local fin = math.max(x,y,z)
-	if fin == y then
-		Tar = "y"
-		len1 = ceny
-		len2 = cenz
-	elseif fin == z then
-		Tar = "z"
-		len1 = cenz
-		len2 = ceny
+	local wep = net.ReadEntity()
+	if !IsValid(wep) then return end
+	--print(wep)
+	for i,tbldata in pairs(wep.DupeData) do
+		local Maxs = wep.DupeData_MAX
+		local Mins = wep.DupeData_MIN
+		local lenx,leny,lenz = Maxs.x-Mins.x,
+							   Maxs.y-Mins.y,
+							   Maxs.z-Mins.z
+		local cenx,ceny,cenz = (Maxs.x+Mins.x)/2,
+							   (Maxs.y+Mins.y)/2,
+							   (Maxs.z+Mins.z)/2
+		--print(RDupe.Maxs,RDupe.Mins)
+		local x,y,z = math.abs(leny*lenz),math.abs(lenx*lenz),math.abs(lenx*leny)
+		local Tar = "x"
+		local len1 = cenx
+		local len2 = cenz
+		local fin = math.max(x,y,z)
+		if fin == y then
+			Tar = "y"
+			len1 = ceny
+			len2 = cenz
+		elseif fin == z then
+			Tar = "z"
+			len1 = cenz
+			len2 = ceny
+		end
+		local NewData = {}
+		for ent,data in pairs(tbldata.Data) do
+			--ProtectedCall(ent.Think)
+			--print(ent)
+			if ent == TargetEnt then continue end
+			NewData[ent:EntIndex()] = {
+				--Ent = ent,
+				Pos = data.Pos,
+				Angle = data.Angle
+			}
+		end
+		local Cmp = util.Compress(util.TableToJSON(NewData))
+		local BA = #Cmp
+		--print(util.TableToJSON(NewData))
+		timer.Simple(.02+FrameTime()*10,function()
+
+			--print('1')
+			--local Cmp = util.Compress(util.TableToJSON(NewData))
+			--local BA = #Cmp
+			if !IsValid(wep) then return end
+
+			net.Start("NSPW_TransPropTableMessage")
+				net.WriteEntity(wep)
+				net.WriteEntity(tbldata.DupeDataC)
+				net.WriteUInt(i,8)
+
+				net.WriteString(Tar)
+				net.WriteFloat(fin^0.5)
+				net.WriteFloat(len1)
+				net.WriteFloat(len2)
+
+				net.WriteUInt(BA, 16)
+				net.WriteData(Cmp, BA)
+				--net.WriteTable(Dupe)
+				--net.WriteUInt(#Count,16)
+				--[[for ent,data in pairs(Dupe) do
+					--print(ent)
+					net.WriteEntity(ent)
+					--net.WriteVector(data.Pos)
+					--net.WriteAngle(data.Angle)
+				end]]
+			net.Broadcast()
+
+		end)
 	end
-	local NewData = {}
-	for ent,data in pairs(Wep.DupeData) do
-		--ProtectedCall(ent.Think)
-		--print(ent)
-		if ent == TargetEnt then continue end
-		NewData[ent:EntIndex()] = {
-			--Ent = ent,
-			Pos = data.Pos,
-			Angle = data.Angle
-		}
-	end
-	local Cmp = util.Compress(util.TableToJSON(NewData))
-	local BA = #Cmp
-	--print(util.TableToJSON(NewData))
-	timer.Simple(.02+FrameTime()*10,function()
-
-		--local Cmp = util.Compress(util.TableToJSON(NewData))
-		--local BA = #Cmp
-		if !IsValid(self) or !IsValid(wep) then return end
-
-		net.Start("NSPW_TransPropTableMessage")
-			net.WriteEntity(wep)
-			net.WriteEntity(TargetEnt)
-
-			net.WriteString(Tar)
-			net.WriteFloat(fin^0.5)
-			net.WriteFloat(len1)
-			net.WriteFloat(len2)
-			
-			net.WriteUInt(BA, 16)
-			net.WriteData(Cmp, BA)
-			--net.WriteTable(Dupe)
-			--net.WriteUInt(#Count,16)
-			--[[for ent,data in pairs(Dupe) do
-				--print(ent)
-				net.WriteEntity(ent)
-				--net.WriteVector(data.Pos)
-				--net.WriteAngle(data.Angle)
-			end]]
-		net.Broadcast()
-
-	end)
 	--PrintTable(TBL)
 
 end)
@@ -333,19 +368,11 @@ local ConstraintWhiteList = {
 --local NotSoConstraintWhiteList = {
 --}
 
-local _ply = FindMetaTable("Player")
-
-function _ply:NSPW_PickupItem()
-
-	local TargetEnt = self:GetEyeTrace().Entity
-
-	--查距离,大伙都不是长臂猿
-	--求一个值的平方的占用比开一个值的方小(确信)
-	if TargetEnt:GetPos():DistToSqr(self:GetPos()) > GetConVar("savee_nspw_pickuprange"):GetFloat()^2 then return end
+function NSPW_GeneratePropData(TargetEnt)
 
 	local function WhoIsMyDaddy(child)
 
-		local father = child:GetParent()
+		local father = child:GetMoveParent()
 
 		if !IsValid(father) or father == child then return child end
 		
@@ -354,6 +381,7 @@ function _ply:NSPW_PickupItem()
 	end
 
 	TargetEnt = WhoIsMyDaddy(TargetEnt)
+	print(TargetEnt)
 
 	--等下暗影刀?????
 	--if TargetEnt.NSPW_PROP_NOCONSTRAINT then return end
@@ -385,6 +413,8 @@ function _ply:NSPW_PickupItem()
 
 		if !IsValid(ent) or !NPropData or ent.NSPW_PROP_NOCONSTRAINT then continue end
 
+		--print(ent,NPropData.Priority,ent:GetModel())
+
 		if (NPropData.Priority or 0) > CurPriority then
 
 			CurPriority = NPropData.Priority
@@ -395,6 +425,8 @@ function _ply:NSPW_PickupItem()
 		end
 
 	end
+
+	--print(TargetEnt)
 
 
 	DebugMessage("[NSP2W捡起检测]检测成功,开始同步数据 优先级最大的实体: ",TargetEnt)
@@ -486,8 +518,7 @@ function _ply:NSPW_PickupItem()
 
 	duplicator.SetLocalPos(vector_origin)
 	duplicator.SetLocalAng(angle_zero)
-	--接替
-	--local ConstEntTbl = {}
+
 	local Count = {}
 
 	local function AddData(i,data)
@@ -506,6 +537,7 @@ function _ply:NSPW_PickupItem()
 		end
 
 		e.NSPW_PROP_MYPARENT = parent
+		e.NSPW_PROP_MYSLOT = Slot
 		e.NSPW_PROP_OLDCOLLISIONCHECK = e:GetCustomCollisionCheck()
 		e.NSPW_PROP_OLDCOLLISIONGROUP = e:GetCollisionGroup()
 		
@@ -521,17 +553,44 @@ function _ply:NSPW_PickupItem()
 		AddData(i,data)
 	end
 
-	--在这里做枪械/近战检测
-	DebugMessage(Dupe)
-	SetGlobalInt("NSPW_TEMP_ENTITYCOUNT",#Count)
+	RDupe.Entities = Dupe
 
-	if self:HasWeapon("nspw_melee") then
-		self:StripWeapon("nspw_melee")--:Remove()
+	return RDupe,TargetEnt
+
+end
+
+function NSPW_GiveWeapon(self,TargetEnt,RDupe)
+	
+	if !RDupe then
+		RDupe, TargetEnt = NSPW_GeneratePropData(TargetEnt)
 	end
 
-	local wep = ents.Create("nspw_melee")
+	local Dupe = RDupe.Entities
+	local Slot = 1
+	if self:IsPlayer() and self:HasWeapon("nspw_melee") then
+		--print("WTF")
+		Slot = #self:GetWeapon("nspw_melee").DupeData + 1
+	end
 
-	wep:SetOwner(self)
+	--在这里做枪械/近战检测
+
+	local ModTbl = table.Copy(Dupe)
+	--ModTbl.DupeDataC = TargetEnt
+
+	local wep
+
+	if self:IsPlayer() and self:HasWeapon("nspw_melee") then
+		--print("WTF")
+		wep = self:GetWeapon("nspw_melee")
+
+	else
+
+		wep = self:IsPlayer() and ents.Create("nspw_melee") or self:Give("nspw_melee")
+		--wep.Initialized = false
+
+		wep:SetOwner(self)
+
+	end
 
 	--这些数据发给客户端用于绘制,真正位移在服务端
 	--wep:SetPropEntityCount(#Count)
@@ -542,14 +601,42 @@ function _ply:NSPW_PickupItem()
 		--print(Entity(index))
 
 	end]]
-	wep.DupeData = table.Copy(Dupe)
+
+	local PropData = NSPW_DATA_PROPDATA[TargetEnt:GetModel()]
+
+	if !wep.DupeData then wep.DupeData = {} end
+	wep.DupeData[Slot] = {
+			DupeDataC = TargetEnt,
+			Data = ModTbl,
+			Style = PropData.IsGun and (PropData.DoubleHand and "ar2" or "pistol") or "melee",
+		}
 	wep.DupeData_MAX = RDupe.Maxs
 	wep.DupeData_MIN = RDupe.Mins
 	--wep.DupeDataConstraint = ConstEntTbl
-	wep.DupeDataC = TargetEnt
+	--wep.DupeDataC = TargetEnt
 	--wep:Spawn()
-	wep:Holster()
-	self:PickupWeapon(wep)
+
+	if Slot == wep:GetSlot() then
+		wep:SetClip1(TargetEnt.NSPW_GUNCLIP1 or PropData and (PropData.Magsize or 0))
+	end
+
+	if Slot == 1 then
+		wep:Holster()
+	else
+		wep:Holster_Slot(Slot)
+	end
+	if self:IsPlayer() then
+		self:PickupWeapon(wep)
+		self:SelectWeapon(wep)
+	end
+	--wep:SetCurSlot(1)
+
+
+	hook.Run(_NSPW_HOOK_NAME_ONPICK,self,ModTbl)
+
+
+
+
 	--在下一Tick的下一Tick(大概)调用它,因为它出现在客户端需要亿点点Tick
 	--Todo: 帧影响
 	--table.Merge(Dupe,NoConstraint)
@@ -588,7 +675,10 @@ function _ply:NSPW_PickupItem()
 	for ent,data in pairs(Dupe) do
 		--ProtectedCall(ent.Think)
 		--print(ent)
-		if ent == TargetEnt then continue end
+		if ent == TargetEnt then
+			--NewData.DupeDataC = ent:EntIndex()
+			continue 
+		end
 		NewData[ent:EntIndex()] = {
 			--Ent = ent,
 			Pos = data.Pos,
@@ -598,7 +688,7 @@ function _ply:NSPW_PickupItem()
 	local Cmp = util.Compress(util.TableToJSON(NewData))
 	local BA = #Cmp
 	--print(util.TableToJSON(NewData))
-	timer.Simple(.02+FrameTime()*10,function()
+	timer.Simple(0.02+FrameTime()*10,function()
 
 		--local Cmp = util.Compress(util.TableToJSON(NewData))
 		--local BA = #Cmp
@@ -607,6 +697,7 @@ function _ply:NSPW_PickupItem()
 		net.Start("NSPW_TransPropTableMessage")
 			net.WriteEntity(wep)
 			net.WriteEntity(TargetEnt)
+			net.WriteUInt(Slot, 8)
 
 			net.WriteString(Tar)
 			net.WriteFloat(fin^0.5)
@@ -625,7 +716,30 @@ function _ply:NSPW_PickupItem()
 			end]]
 		net.Broadcast()
 
+		--print("?")
+
 	end)
+
+	return wep
+
+end
+
+local _ply = FindMetaTable("Player")
+
+function _ply:NSPW_PickupItem()
+
+	local TargetEnt = self:GetEyeTrace().Entity
+
+	--查距离,大伙都不是长臂猿
+	--求一个值的平方的占用比开一个值的方小(确信)
+	if TargetEnt:GetPos():DistToSqr(self:GetPos()) > GetConVar("savee_nspw_pickuprange"):GetFloat()^2 then return end
+
+	--local RDupe = NSPW_GeneratePropData(TargetEnt)
+	--local Dupe = RDupe.Entities
+	DebugMessage(Dupe)
+	--接替
+	--local ConstEntTbl = {}
+	NSPW_GiveWeapon(self,TargetEnt)
 	--end
 	--print(#Count)
 	--wep:Spawn()
@@ -645,7 +759,6 @@ end)
 hook.Add("ShouldCollide","NSPW_Hooks_NoCollideWeapon",function(e1,e2)
 
 	--print(e1,e2,(e2:GetMoveType() != MOVETYPE_VPHYSICS or e1:GetMoveType() != MOVETYPE_VPHYSICS))
-		--print(e1,e2)
 	if IsValid(e1.NSPW_PROP_RELATEDWEAPON) and IsValid(e1.NSPW_PROP_RELATEDWEAPON:GetOwner()) and 
 	(
 		(
@@ -661,6 +774,12 @@ hook.Add("ShouldCollide","NSPW_Hooks_NoCollideWeapon",function(e1,e2)
 		return false
 	end
 
+	--弹丸
+	if e1.NSPW_Projectile and (IsValid(e2.NSPW_PROP_RELATEDWEAPON) and e2.NSPW_PROP_RELATEDWEAPON:GetOwner() == e1:GetOwner() or e2.NSPW_Projectile or e2:GetClass() == "func_vehicleclip") then
+		--print(e1,e2)
+		return false
+	end
+
 end)
 
 local AllowedDamageTable = {
@@ -671,6 +790,8 @@ local AllowedDamageTable = {
 }
 
 hook.Add("EntityTakeDamage","NSPW_Hooks_BlockDamage",function(ply,dinfo)
+
+	--do return end
 
 	if !IsValid(ply) or !ply:IsPlayer() then return end
 
@@ -698,10 +819,13 @@ hook.Add("EntityTakeDamage","NSPW_Hooks_BlockDamage",function(ply,dinfo)
 	local Count = 0
 
 	local TargetProp = {}
+	local _,DupeData = wep:GetDupeData()
 
-	for ent,data in pairs(wep.DupeData) do
+	for ent,data in pairs(DupeData or {}) do
 
 		if !IsValid(ent) then continue end
+
+		--print("?")
 
 		local PropData = NSPW_DATA_PROPDATA[ent] or {}
 
@@ -779,8 +903,8 @@ hook.Add("EntityTakeDamage","NSPW_Hooks_BlockDamage",function(ply,dinfo)
 		end
 
 	end
-
-	if GetConVar("savee_nspw_block_weapondrop_on"):GetBool() and def < dinfo:GetDamage() then
+	--print(def)
+	if GetConVar("savee_nspw_block_weapondrop_on"):GetBool() and def*2 < dinfo:GetDamage() then
 
 		wep:DropMySelf()
 		ply:PrintMessage(4, "你武器被震掉了")

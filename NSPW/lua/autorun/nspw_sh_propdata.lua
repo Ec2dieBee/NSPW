@@ -68,9 +68,18 @@ AddCSLuaFile()
 		BulletSpread = Angle(0,1,1), --第一个值没用&
 		BulletSpreadMul = 1, --Attachment Only , 扩散乘数&
 
+		-->弹丸
+
+		ProjectileClass = "crossbow_bolt", --弹丸种类,方向仍然受扩散影响
+		ProjectileVelocity = 1000, --Local值
+		ProjectileVelocityRotateAng = Angle(90,0,0), --旋转方向
+		ProjectileAngle = Angle(0,0,0), --反Bug
+		ProjectilePreCreate = function(projectile) end --生成前
+		ProjectleCreated = function(projectile) end --生成后
+
 		-->换弹
 
-		FreeReload = false, --允许在手枪/步枪双Style下换弹(否则只能在对应Style下换弹,因为我没做)(适用于SMG1,TMP,MAC5等弹夹插在握把上的武器)
+		FreeReload = false, --允许在手枪/步枪双Style下换弹(否则只能在对应Style下换弹,因为我没做)(适用于SMG1,TMP,MAC10等弹夹插在握把上的武器)
 		ReloadSpeedMul = 1, --换弹速度乘数(越大越快)
 		ReloadSpeedAffectMul = 1, --换弹速度干预乘数(Attachment)&
 		ReloadSpeedMulOffset = 0 --换弹速度乘数偏移(Attachment)&
@@ -108,6 +117,7 @@ AddCSLuaFile()
 		AmmoType = "ar2", --子弹类型
 		Magsize = 30, --弹夹容量(Attachment: 增加/减少的弹容量)
 		MagOnBack = true, --使用和AUG(Famas,MA5B)一样的换弹方式(手枪: 使用左轮的换弹方式,不管它的弹仓是怎么工作的)
+		MagOnFront = true, --使用和G11(或者十字弩)一样的换弹方式
 		NoMag = true, --是否要手动装弹(霰弹枪)
 
 		-->音效
@@ -479,7 +489,7 @@ local datatbl = {
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 15,
+		BulletDamage = 20,
 		BulletDamageOffset = 3,
 		BulletSpread = Angle(0,1,1), --第一个值没用
 		ReloadSpeedMul = 1,
@@ -511,7 +521,7 @@ local datatbl = {
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 11,
+		BulletDamage = 25,
 		BulletDamageOffset = 4,
 		BulletSpread = Angle(0,0.8,0.8), --第一个值没用
 		ReloadSpeedMul = 1,
@@ -541,7 +551,7 @@ local datatbl = {
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 30,
+		BulletDamage = 70,
 		BulletDamageOffset = 7,
 		BulletSpread = Angle(0,1.2,1.2), --第一个值没用
 		ReloadSpeedMul = 1,
@@ -574,8 +584,8 @@ local datatbl = {
 		AttackDamageType = DMG_CLUB,
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
-		BulletCount = 1,
-		BulletDamage = 9,
+		BulletCount = 3,
+		BulletDamage = 22,
 		BulletDamageOffset = 3,
 		BulletSpread = Angle(0,0.9,0.9), --第一个值没用
 		ReloadSpeedMul = 1,
@@ -607,7 +617,7 @@ local datatbl = {
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 7,
+		BulletDamage = 18,
 		BulletDamageOffset = 2,
 		BulletSpread = Angle(0,0.85,0.85), --第一个值没用
 		ReloadSpeedMul = 1,
@@ -641,7 +651,7 @@ local datatbl = {
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 18,
+		BulletDamage = 30,
 		BulletDamageOffset = 5,
 		BulletSpread = Angle(0,0.95,0.95), --第一个值没用
 		ReloadSpeedMul = 1,
@@ -1281,7 +1291,7 @@ local datatbl = {
 		BulletCount = 8,
 		BulletDamage = 15,
 		BulletDamageOffset = 3,
-		BulletSpread = Angle(0,3,3), --第一个值没用
+		BulletSpread = Angle(0,2.5,2.5), --第一个值没用
 		ReloadSpeedMul = 1,
 		ReloadSpeedAffectMul = 1,
 		RecoilV = 0,
@@ -1507,8 +1517,8 @@ local datatbl = {
 		IsGun = true,
 		BulletDamageType = DMG_BULLET,
 		BulletCount = 1,
-		BulletDamage = 18,
-		BulletDamageOffset = 3,
+		BulletDamage = 38,
+		BulletDamageOffset = 5,
 		BulletSpread = Angle(0,0.5,0.5), --第一个值没用
 		ReloadSpeedMul = 1,
 		ReloadSpeedAffectMul = 1,
@@ -1551,7 +1561,7 @@ local datatbl = {
 		IsGun = true,
 		BulletDamageType = DMG_BUCKSHOT,
 		BulletCount = 12,
-		BulletDamage = 8,
+		BulletDamage = 10,
 		BulletDamageOffset = 3,
 		BulletSpread = Angle(0,3.5,3.5), --第一个值没用
 		ReloadSpeedMul = 1,
@@ -1627,6 +1637,249 @@ local datatbl = {
 		ReloadEvent_Start = "weapons/357/357_reload4.wav",
 		NextFireTime = 0.5,
 		AimOffsetPos = Vector(0,0,-1),
+	},
+	["models/weapons/w_alyx_gun.mdl"] = {
+		Priority = 3,
+		OffsetPos = Vector(1.5,-0.1,-4.5),
+		OffsetAng = Angle(-15,-169.3,12),
+		AttackDamageType = DMG_CLUB,
+		IsGun = true,
+		BulletDamageType = DMG_BULLET,
+		BulletCount = 1,
+		BulletDamage = 12,
+		BulletDamageOffset = 3,
+		BulletSpread = Angle(0,0.45,0.45), --第一个值没用
+		ReloadSpeedMul = 1.3,
+		ReloadSpeedAffectMul = 1,
+		RecoilV = 0,
+		RecoilV_Offset = 0.4,
+		RecoilH = 0.55,
+		RecoilH_Offset = 0.2,
+		TrueRecoilMul = 0.15, --枪口上跳?(不是ViewPunch),建议不大于1
+		TrueRecoilMul_Offset = 0.1, --这个东西修改的是Mul
+		--RecoilVMul = 1, --给Attachment用的
+		--RecoilHMul = 1, --给Attachment用的
+		ShootSound = {
+			--"weapons/alyx_gun/alyx_gun_fire3.wav",
+			--"weapons/alyx_gun/alyx_gun_fire4.wav",
+			"weapons/alyx_gun/alyx_gun_fire5.wav",
+			"weapons/alyx_gun/alyx_gun_fire6.wav",
+		},
+		NoAim = false,
+		AmmoType = "357",
+		--ForceHeavyWeapon = true,
+		Magsize = 25,
+		MuzzlePos = Vector(0,0,4),
+		--MagOnBack = true,
+		--ForceHeavyWeapon = true,
+		ReloadEvent_Start = "weapons/pistol/pistol_reload1.wav",
+		NextFireTime = 0.1,
+		Automatic = true,
+		AimOffsetPos = Vector(0,0,0),
+	},
+	["models/weapons/w_crossbow.mdl"] = {
+		Priority = 3,
+		OffsetPos = Vector(-4,2.8,-0.2),
+		OffsetAng = Angle(10,-2,-1),
+		AttackDamageType = DMG_CLUB,
+		IsGun = true,
+		DoubleHand = true,
+		BulletCount = 1,
+		ProjectileClass = "crossbow_bolt",
+		ProjectileVelocity = 2500, --Local值
+		ProjectileAngle = Angle(0,0,0), --反Bug
+		ProjectilePreCreate = function(proj)
+
+			--proj:SetCollisionGroup(COLLISION_GROUP_NONE)
+
+			--proj:AddCallback("BuildFlexWeights", function(proj)
+			
+			--print(proj)
+			local ctrl = ents.Create("base_point")
+			ctrl:SetPos(proj:GetPos())
+			ctrl:SetParent(proj)
+			proj:DeleteOnRemove(ctrl)
+			ctrl:NextThink(CurTime() + .01)
+
+			function ctrl:Think(spawnthink)
+
+				--print(1)
+				if !spawnthink and proj:GetMoveType() == MOVETYPE_NONE then
+					self:Remove()
+					--print("REM")
+					return 
+				end
+
+
+				local tr = util.TraceLine({
+					start = proj:GetPos(),
+					endpos = proj:GetPos() + (proj:GetAngles():Forward()) * 35,
+					mask = MASK_SHOT,
+					filter = function(e)
+						if e == proj or e == self or (spawnthink and e == proj:GetOwner()) then return false end
+						local res = hook.Run("ShouldCollide", proj, e)
+						if res == nil then res = true end
+						--print(e,res)
+						return res
+					end,
+				})
+
+				self:NextThink(CurTime() + .01)
+				if !IsValid(tr.Entity) then return true end
+
+				local dinfo = DamageInfo()
+				dinfo:SetDamageType(DMG_SLASH)
+				dinfo:SetDamage(100)
+				dinfo:SetAttacker(proj:GetOwner())
+				tr.Entity:TakeDamageInfo(dinfo)
+				--self:Remove()
+				return true
+
+			end
+
+			ctrl:Spawn()
+
+			ctrl:Think(true)
+			
+			--end)
+
+		end,
+		BulletSpread = Angle(0,0.1,0.1), --第一个值没用
+		ReloadSpeedMul = 1.3,
+		ReloadSpeedAffectMul = 1,
+		RecoilV = 0,
+		RecoilV_Offset = 0.4,
+		RecoilH = 0.55,
+		RecoilH_Offset = 0.2,
+		TrueRecoilMul = 0.15, --枪口上跳?(不是ViewPunch),建议不大于1
+		TrueRecoilMul_Offset = 0.1, --这个东西修改的是Mul
+		--RecoilVMul = 1, --给Attachment用的
+		--RecoilHMul = 1, --给Attachment用的
+		ShootSound = "weapons/crossbow/fire1.wav",
+		NoAim = false,
+		AmmoType = "XBowBolt",
+		AimUseScope = true,
+		AimFovMul = 0.2,
+		AimMouseSensMul = 0.2,
+		--ForceHeavyWeapon = true,
+		Magsize = 1,
+		MuzzlePos = Vector(0,0,4),
+		MagOnFront = true,
+		ForceHeavyWeapon = true,
+		ReloadEvent_Start = "weapons/crossbow/reload1.wav",
+		ReloadEvent_ClipIn = {"weapons/crossbow/bolt_load1.wav","weapons/crossbow/bolt_load2.wav"},
+		NextFireTime = 0.1,
+		Automatic = true,
+		AimOffsetPos = Vector(0,0,-4),
+		BoneManipulates = {
+			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(1,0,0),Ang = Angle(0,0,2)},
+		},
+		BoneManipulatesAnimation = {
+			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(-2.3,-3,0),Ang = Angle(0,0,2)},
+		},
+	},
+	["models/weapons/w_rocket_launcher.mdl"] = {
+		Priority = 3,
+		OffsetPos = Vector(12,1.2,-2.5),
+		OffsetAng = Angle(-10.7,179.5,5),
+		AttackDamageType = DMG_CLUB,
+		IsGun = true,
+		DoubleHand = true,
+		BulletCount = 1,
+		ProjectileClass = "rpg_missile",
+		ProjectileVelocity = 0, --Local值
+		ProjectileVelocityRotateAng = Angle(0,0,0),
+		ProjectileAngle = Angle(0,0,0), --反Bug
+		ProjectileCreated = function(proj)
+
+			--proj:SetCollisionGroup(COLLISION_GROUP_NONE)
+
+			--proj:AddCallback("BuildFlexWeights", function(proj)
+			
+			--print(proj)
+
+			local donttargetowner = true
+
+			proj:SetVelocity(Vector(0,0,70))
+			local ctrl = ents.Create("base_point")
+			ctrl:SetPos(proj:GetPos())
+			ctrl:SetParent(proj)
+			proj:DeleteOnRemove(ctrl)
+
+
+			function ctrl:Think()
+
+				local tr = util.TraceLine({
+					start = proj:GetPos(),
+					endpos = proj:GetPos() + (proj:GetAngles():Forward()) * 25,
+					mask = MASK_SHOT,
+					filter = function(e)
+						if e == proj or e == self or (e == proj:GetOwner()) then return false end
+						local res = hook.Run("ShouldCollide", proj, e)
+						if res == nil then res = true end
+						--print(e,res)
+						return res
+					end,
+				})
+
+				self:NextThink(CurTime() + .01)
+				if !tr.Hit then return true end
+
+				--print("HIT")
+				if !IsValid(proj) then return end
+				local pos, owner = proj:GetPos(), proj:GetOwner()
+				--print(owner)
+				util.BlastDamage(
+				proj, 
+				IsValid(owner) and owner or proj, 
+				pos, 512, math.random(85,130))
+				self:Remove()
+				return true
+
+			end
+
+			ctrl:Spawn()
+
+			
+			--[[timer.Simple(0.5,function()
+				--print("1")
+				if !IsValid(ctrl) then return end
+
+				donttargetowner = false
+			
+			end)]]
+
+		end,
+		BulletSpread = Angle(0,0,0), --第一个值没用
+		ReloadSpeedMul = 1.3,
+		ReloadSpeedAffectMul = 1,
+		RecoilV = 0,
+		RecoilV_Offset = 0.4,
+		RecoilH = 0.55,
+		RecoilH_Offset = 0.2,
+		TrueRecoilMul = 0.15, --枪口上跳?(不是ViewPunch),建议不大于1
+		TrueRecoilMul_Offset = 0.1, --这个东西修改的是Mul
+		--RecoilVMul = 1, --给Attachment用的
+		--RecoilHMul = 1, --给Attachment用的
+		ShootSound = "weapons/rpg/rocketfire1.wav",
+		NoAim = false,
+		AmmoType = "RPG_Round",
+		--ForceHeavyWeapon = true,
+		Magsize = 1,
+		MuzzlePos = Vector(0,0,4),
+		MagOnFront = true,
+		ForceHeavyWeapon = true,
+		--ReloadEvent_Start = "weapons/crossbow/reload1.wav",
+		--ReloadEvent_ClipIn = {"weapons/crossbow/bolt_load1.wav","weapons/crossbow/bolt_load2.wav"},
+		NextFireTime = 0.1,
+		Automatic = true,
+		AimOffsetPos = Vector(0,0,-4),
+		--[[BoneManipulates = {
+			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(2,0,0),Ang = Angle(0,0,2)},
+		},]]
+		BoneManipulatesAnimation = {
+			["ValveBiped.Bip01_L_Clavicle"] = {Pos = Vector(-1.3,-7,-2),Ang = Angle(0,0,2)},
+		},
 	},
 	--Joke Weapons
 	["models/weapons/w_toolgun.mdl"] = {
@@ -1750,31 +2003,49 @@ local datatbl = {
 			damageinfo:SetDamageType(bit.bor(damageinfo:GetDamageType(),DMG_SHOCK))
 			damageinfo:SetDamage(damageinfo:GetDamage()+math.random(1,3))
 			--tr("HunterTracer")
-			BulletSpreadMul = 0.55
-			ReloadSpeedMulOffset = 0.3
 		end,
+		BulletSpreadMul = 0.55,
+		ReloadSpeedMulOffset = 0.3,
 		NextFireTime = -0.03,
+
+	},
+	["models/props_combine/combinethumper002.mdl"] = {
+		
+		BulletTrace = "HunterTracer",
+		BulletCallback = function(self,attacker,trace,damageinfo,tr)
+			damageinfo:SetDamageType(bit.bor(damageinfo:GetDamageType(),DMG_ENERGYBEAM))
+			damageinfo:SetDamage(damageinfo:GetDamage()+math.random(17,30))
+			--tr("HunterTracer")
+		end,
+		BulletSpreadMul = 0.35,
+		ReloadSpeedMulOffset = 0.5,
+		NextFireTime = 0.6,
+		RecoilV_Offset = 0.3, --水平后座偏移&
+		RecoilH = 0.5, --垂直后座(Attachment: 偏移)&
+		RecoilH_Offset = 0.35, --垂直后座偏移&
+		Magsize = -10,
 
 	},
 	["models/items/combine_rifle_cartridge01.mdl"] = {
 		
-		Magsize = 25,
+		Magsize = 7,
 		RecoilVMul = 0.95,
+		RecoilHMul = 1.15,
 		ReloadSpeedMulOffset = 0.15,
 
 	},
 	["models/items/boxsrounds.mdl"] = {
 		
-		Magsize = 35,
+		Magsize = 5,
 		RecoilVMul = 0.85,
 		ReloadSpeedMulOffset = 0.1,
-		Automatic = true,
+		--Automatic = true,
 		NextFireTime = 0.02,
 
 	},
 	["models/items/boxmrounds.mdl"] = {
 		
-		Magsize = 50,
+		Magsize = 15,
 		RecoilVMul = 0.55,
 		ReloadSpeedMulOffset = 0.3,
 		Automatic = true,
@@ -1783,7 +2054,7 @@ local datatbl = {
 	},
 	["models/items/boxbuckshot.mdl"] = {
 		
-		Magsize = 8,
+		Magsize = 2,
 		BulletSpreadMul = 2,
 		BulletCount = 3,
 		NextFireTime = 0.15,
@@ -1943,6 +2214,7 @@ function datatbl:__index(key)
 		end
 
 	else
+		if isentity(key) and !IsValid(key) then return {} end
 		local tbl = datatbl[isentity(key) and string.lower(key:GetModel() or "") or (string.lower(key or ""))]
 		if !istable(tbl) then 
 			--print("这是一坨被加工的屎,其中这坨屎是",IsValid(key))

@@ -14,6 +14,10 @@ e2function void setNSPWShouldAttack(entity wep,number shouldattack)
 	if not IsValid(wep) or wep:GetClass() != "nspw_melee" or 
 	wep:GetOwner() != 
 	self.player then return end
+
+	local _,PropData = wep:GetDupeData()
+	if !PropData[self.entity] then return end
+
 	wep.WireIO_ShouldAttack = tobool(shouldattack)
 	--print(tobool(shouldattack))
 	
@@ -24,6 +28,10 @@ e2function void setNSPWNextPrimaryAttack(entity wep,number time)
 	if !IsValid(wep) or wep:GetClass() != "nspw_melee" or wep:GetOwner() != self.player then return end
 	--鉴于这玩意作弊性质严重,所以我们要禁了它默认的攻击
 	--print("true")
+
+	local _,PropData = wep:GetDupeData()
+	if !PropData[self.entity] then return end
+
 	if wep.WireIO_ShouldAttack then 
 		self:throw("Disable attacking first!")
 		--print("没活了")
@@ -64,6 +72,10 @@ e2function void nspwSetShouldAttack(entity wep,number shouldattack)
 	if not IsValid(wep) or wep:GetClass() != "nspw_melee" or 
 	wep:GetOwner() != 
 	self.player then return end
+
+	local _,PropData = wep:GetDupeData()
+	if !PropData[self.entity] then return end
+
 	wep.WireIO_ShouldAttack = tobool(shouldattack)
 	--print(tobool(shouldattack))
 	
@@ -75,6 +87,10 @@ e2function void nspwSetNextPrimaryAttack(entity wep,number time)
 	if !IsValid(wep) or wep:GetClass() != "nspw_melee" or wep:GetOwner() != self.player then return end
 	--鉴于这玩意作弊性质严重,所以我们要禁了它默认的攻击
 	--print("true")
+
+	local _,PropData = wep:GetDupeData()
+	if !PropData[self.entity] then return end
+
 	if wep.WireIO_ShouldAttack then 
 		self:throw("Disable attacking first!")
 		--print("没活了")
@@ -110,6 +126,8 @@ e2function void runOnNSPWEvent(number run)
 	--print(self.owner)
 	--PrintTable(self)
 	if not IsValid(wep) or wep:GetClass() != "nspw_melee" or wep:GetOwner() != self.player then return end
+	local _,PropData = wep:GetDupeData()
+	if !PropData[self.entity] then return end
 	--print("SMJB")
 	wep.WireIO_E2List[self] = (run != 0)
 	

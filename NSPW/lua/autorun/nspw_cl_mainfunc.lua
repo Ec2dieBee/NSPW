@@ -10,7 +10,8 @@ net.Receive("NSPW_TransTraceMessage",function()
 	local Src = Vector(net.ReadFloat(),net.ReadFloat(),net.ReadFloat())
 	local Dir = Vector(net.ReadFloat(),net.ReadFloat(),net.ReadFloat())
 	local owner = Wep:GetOwner()
-	local PropData = NSPW_DATA_PROPDATA[Wep.DupeDataC:GetModel()]
+	local _,_,DupeDataC = Wep:GetDupeData()
+	local PropData = NSPW_DATA_PROPDATA[DupeDataC:GetModel()]
 	local HS = PropData.BulletHullSize or 0
 	--print(IsValid(o) , o:GetShootPos() , Wep:GetPos())
 
@@ -69,34 +70,30 @@ net.Receive("NSPW_TransTraceMessage",function()
 	ed:SetOrigin(Src)
 	ed:SetFlags(net.ReadUInt(5))
 
-	ed:SetEntity(Wep.DupeDataC)
+	ed:SetEntity(DupeDataC)
 	util.Effect(net.ReadString(),ed)
 
 end)
 
 net.Receive("NSPW_TransPropTableMessage",function()
 
+	--print("REC")
 	--print(Entity(net.ReadUInt(16)))
 
 	--do return end
 
 
-	local Wep = net.ReadEntity()
-
-	if Wep.DupeDataInitialized then return end
-	print("IRECEIVEa!")
-
+	local wep = net.ReadEntity()
 	local DupeDataC = net.ReadEntity()
+	local Slot = net.ReadUInt(8)
+
+	--if Wep.DupeDataInitialized then return end
+	--print("IRECEIVEa!")
+
 	local DrawAxis = net.ReadString()
 	local Dist,DrawX,DrawY = net.ReadFloat(),net.ReadFloat(),net.ReadFloat()
 	--local Count = net.ReadUInt(16)
-	local DupeData = {
-		[DupeDataC] = {
-			Pos = Vector(),
-			Angle = Angle(),
-		}
-	}
-
+	local DupeData = {}
 	local BA = net.ReadUInt(16)
 	local Data = net.ReadData(BA)
 	local DeCmp = util.Decompress(Data or "")
@@ -105,20 +102,27 @@ net.Receive("NSPW_TransPropTableMessage",function()
 	for ei,data in pairs(Tbl) do
 		DupeData[Entity(ei)] = data
 	end
+	--local DupeDataC = DupeData.DupeDataC
+	DupeData[DupeDataC] = {
+		Pos = Vector(),
+		Angle = Angle(),
+	}
 
-	for Ent,_ in pairs(DupeData) do
+
+	for ent,_ in pairs(DupeData) do
 		--local Ent = net.ReadEntity()
 
 		--print(Ent)
 
-		if !IsValid(Ent) then continue end
+		if !IsValid(ent) then continue end
 		--print(Wep.DupeData)
 		--Ent:SetParent(NULL)
-		if Ent.NSPW_PROP_CL_PREDICTABLE == nil then
-			Ent.NSPW_PROP_CL_PREDICTABLE = EntMeta.GetPredictable(Ent)
+		if ent.NSPW_PROP_CL_PREDICTABLE == nil then
+			ent.NSPW_PROP_CL_PREDICTABLE = EntMeta.GetPredictable(ent)
 		end
+		print(ent)
 		--if isfunction(Ent.Draw) then
-			EntMeta.SetPredictable(Ent,true)
+			EntMeta.SetPredictable(ent,true)
 			--EntMeta.SetParent(Ent,NULL)
 			--print("?")
 		--end
@@ -130,11 +134,20 @@ net.Receive("NSPW_TransPropTableMessage",function()
 		--DupeData[Ent] = {} --{Pos = net.ReadVector(),Ang = net.ReadAngle()}
 
 	end
-	Wep.DupeDataC = DupeDataC
-	Wep.DupeData = DupeData
-	Wep.DupeDataInitialized = true
-	Wep.NSPW_DrawAxis = DrawAxis
-	Wep.NSPW_DrawSize = {DrawX,DrawY,Dist}
+	--Wep.DupeDataC = DupeDataC
+	if !wep.DupeData then wep.DupeData = {} end
+	wep.DupeData[Slot] = {
+		DupeDataC = DupeDataC,
+		Data = DupeData,
+		NSPW_DrawAxis = DrawAxis,
+		NSPW_DrawSize = {DrawX,DrawY,Dist}
+		}
+	wep.DupeDataInitialized = true
+	if Slot != wep:GetSlot() then
+		wep:Holster_Slot(Slot)
+	end
+	--Wep.NSPW_DrawAxis = DrawAxis
+	--Wep.NSPW_DrawSize = {DrawX,DrawY,Dist}
 	--Wep.DataSynced = true
 	--PrintTable(TBL)
 
@@ -146,6 +159,8 @@ net.Receive("NSPW_TransDroppedPropMessage",function()
 
 	for _,ei in pairs(Tbl or {}) do
 
+		--print("?")
+
 		local ent = Entity(ei)
 
 		if !IsValid(ent) then continue end
@@ -153,7 +168,7 @@ net.Receive("NSPW_TransDroppedPropMessage",function()
 		ent:SetNoDraw(false)
 
 		ent:SetRenderOrigin(nil)
-		ent:SetRenderAngles(nil)
+		ent:SetRenderAngles(ent:IsPlayer() and ent:GetAngles() or nil)
 
 
 		if ent.NSPW_PROP_CL_RENDEROVERRIDESETTED then

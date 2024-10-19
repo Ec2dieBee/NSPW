@@ -57,12 +57,6 @@ local function DebugMessage(...)
 
 end
 
-local ConstraintWhiteList = {
-	["Weld"] = true,
-	["Rope"] = true,
-	["NoCollide"] = true,
-}
-
 -- This function/hook is called when the player presses their left click
 function TOOL:LeftClick( tr )
 
@@ -92,126 +86,27 @@ function TOOL:LeftClick( tr )
 	local Dupe = duplicator.Paste(owner, owner.NSPW_TOOLGUN_NPCWEAPONS_DupeData.Entities,owner.NSPW_TOOLGUN_NPCWEAPONS_DupeData.Constraints)
 	local TargetEnt = Dupe[owner.NSPW_TOOLGUN_NPCWEAPONS_DupeDataM]
 
-	local Dupe = duplicator.Copy(TargetEnt)
+	local wep = NSPW_GiveWeapon(ent,TargetEnt)
 
-	DebugMessage("[NSP2W捡起检测]Dupe表",Dupe)
-
-	for _,data in pairs(Dupe.Constraints) do
-		--防止某人做的流星锤崩服
-		if !ConstraintWhiteList[data.Type] then 
-			DebugMessage("[NSP2W捡起检测] 发现非白名单约束,开润",data.Type)
-			return
-		end
-	end
-
-
-	--查询优先级
 	local CurPriority = 0
 	local PropData = {}
-	for i,data in pairs(Dupe.Entities) do
+	for i,ent in pairs(Dupe) do
 
-		if !NSPW_DATA_PROPDATA[data.Model] then continue end
+		--print(i,ent)
+		ent:SetNoDraw(false)
 
-		if (NSPW_DATA_PROPDATA[data.Model].Priority or 0) > CurPriority then
+		if !NSPW_DATA_PROPDATA[ent] then continue end
 
-			CurPriority = NSPW_DATA_PROPDATA[data.Model].Priority
-			TargetEnt = Entity(i)
+		if (NSPW_DATA_PROPDATA[ent].Priority or 0) > CurPriority then
+
+			CurPriority = NSPW_DATA_PROPDATA[ent].Priority
 			--print("城镇交替")
-			PropData = NSPW_DATA_PROPDATA[data.Model]
+			PropData = NSPW_DATA_PROPDATA[ent]
 
 		end
 
 	end
 
-
-	DebugMessage("[NSP2W捡起检测]检测成功,开始同步数据 优先级实体: ",TargetEnt)
-
-	--[[local DPos,DAng = LocalToWorld(
-		(PropData.OffsetPos or Vector()),
-		(PropData.OffsetAng or Angle()),
-		TargetEnt:GetPos(),
-		TargetEnt:GetAngles()
-	)
-
-	duplicator.SetLocalPos(DPos)
-	duplicator.SetLocalAng(DAng)]]
-	duplicator.SetLocalPos(TargetEnt:GetPos())
-	duplicator.SetLocalAng(TargetEnt:GetAngles())
-
-	--duplicator.Copy(Entity ent, table tableToAdd={})
-
-	local Children = {}
-	local Found = {}
-
-	local function GetChildrens(ent)
-
-		if !IsValid(ent) then return end
-		--print(114)
-		--PrintTable(ent:GetChildren())
-		--for _,ent in pairs(ent:GetChildren()) do
-		--事实: 上面那个东西查不到太多 
-		for _,cent in pairs(ents.GetAll()) do 
-
-			if !IsValid(cent) or Found[cent] then continue end
-			
-			if cent:GetParent() != ent then continue end
-			--print(cent,ent)
-
-			Found[cent] = true
-			Children[#Children + 1] = cent
-			GetChildrens(cent)
-			--print(ent)
-
-
-		end
-
-	end
-
-	for i,data in pairs(table.Copy(Dupe.Entities)) do
-		
-		if !tonumber(i) then continue end
-
-		local Ent = Entity(i)
-		
-		if !IsValid(Ent) then continue end
-
-		GetChildrens(Ent)
-	end
-
-	Dupe = duplicator.Copy(TargetEnt).Entities
-	local data = duplicator.CopyEnts(Children).Entities
-	for i,dta in pairs(data) do
-
-		if Dupe[i] then continue end
-		Dupe[i] = dta
-
-	end
-	--PrintTable(duplicator.CopyEnts(Children).Entities)
-
-	duplicator.SetLocalPos(vector_origin)
-	duplicator.SetLocalAng(angle_zero)
-	--接替
-	local Count = {}
-	for i,data in pairs(table.Copy(Dupe)) do
-		--print(i)
-		local e = Entity(tonumber(i))
-		e.NSPW_PROP_MYPARENT = e:GetParent()
-		e.NSPW_PROP_OLDCOLLISIONCHECK = e:GetCustomCollisionCheck()
-		e.NSPW_PROP_OLDCOLLISIONGROUP = e:GetCollisionGroup()
-		if !e:GetNoDraw() then
-			Count[#Count + 1] = i
-			Dupe[e] = data
-		end
-		Dupe[i] = nil
-		--print(i)
-	end
-
-	local wep = ent:Give("nspw_melee")
-
-	wep.DupeData = Dupe
-	wep.DupeDataC = TargetEnt
-	--wep:Spawn()
-	wep:Initialize()
 	local forcesmg = self:GetClientNumber( "issmg", 0 ) != 0
 	local ht = PropData.IsGun and (
 			forcesmg and "smg" or (PropData.DoubleHand and 
@@ -225,28 +120,6 @@ function TOOL:LeftClick( tr )
 
 	wep:SetHoldType(ht)
 	wep:SetStyle(ht)
-	--wep:Holster()
-
-
-
-	timer.Simple(.02,function()
-
-		if !IsValid(ent) or !IsValid(wep) then return end
-
-		--print("?")
-
-		net.Start("NSPW_TransPropTableMessage")
-			net.WriteEntity(wep)
-			net.WriteEntity(TargetEnt)
-			--net.WriteTable(Dupe)
-			net.WriteUInt(#Count,16)
-			for ent,_ in pairs(Dupe) do
-				--print(ent)
-				net.WriteEntity(ent)
-			end
-		net.Broadcast()
-
-	end)
 
 
 	return true
@@ -282,13 +155,13 @@ function TOOL:RightClick( tr )
 
 	DebugMessage("[NSP2W捡起检测]Dupe表",Dupe)
 
-	for _,data in pairs(Dupe.Constraints) do
+	--[[for _,data in pairs(Dupe.Constraints) do
 		--防止某人做的流星锤崩服
 		if !ConstraintWhiteList[data.Type] then 
 			DebugMessage("[NSP2W捡起检测] 发现非白名单约束,开润",data.Type)
 			return
 		end
-	end
+	end]]
 
 
 	--查询优先级
